@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ShoppingBag, Sparkles, X, Plus, Minus, ArrowRight, Search, LayoutDashboard, PackagePlus, History, Zap, Flame } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingBag, Sparkles, X, Plus, Minus, ArrowRight, Search, LayoutDashboard, PackagePlus, History, Zap, Flame, Menu } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { GoogleGenAI } from "@google/genai";
 import { Shoe, CartItem } from "@/types";
@@ -17,6 +17,7 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
   currentPage: Page
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -24,14 +25,26 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const navLinks = [
+    { name: 'Drops', id: 'drops' as Page },
+    { name: 'Culture', id: 'culture' as Page },
+    { name: 'Archive', id: 'archive' as Page },
+    { name: 'Admin', id: 'admin' as Page, icon: LayoutDashboard },
+  ];
+
+  const handleMobileNavigate = (page: Page) => {
+    onNavigate(page);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'py-4 bg-white/80 backdrop-blur-md border-b border-black/5 shadow-sm' : 'py-8 bg-transparent'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled || isMobileMenuOpen ? 'py-4 bg-white/80 backdrop-blur-md border-b border-black/5 shadow-sm' : 'py-8 bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 cursor-pointer"
-          onClick={() => onNavigate('home')}
+          onClick={() => handleMobileNavigate('home')}
         >
           <span className="font-serif italic text-2xl font-bold tracking-tighter">APEX SOLES GH</span>
         </motion.div>
@@ -40,37 +53,22 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex gap-8 items-center"
+          className="flex gap-4 md:gap-8 items-center"
         >
           <div className="hidden md:flex gap-8 items-center mr-4">
-            <button 
-              onClick={() => onNavigate('drops')}
-              className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-opacity ${currentPage === 'drops' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
-            >
-              Drops
-            </button>
-            <button 
-              onClick={() => onNavigate('culture')}
-              className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-opacity ${currentPage === 'culture' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
-            >
-              Culture
-            </button>
-            <button 
-              onClick={() => onNavigate('archive')}
-              className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-opacity ${currentPage === 'archive' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
-            >
-              Archive
-            </button>
-            <button 
-              onClick={() => onNavigate('admin')}
-              className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-opacity flex items-center gap-1 ${currentPage === 'admin' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
-            >
-              <LayoutDashboard size={12} />
-              Admin
-            </button>
+            {navLinks.map((link) => (
+              <button 
+                key={link.id}
+                onClick={() => onNavigate(link.id)}
+                className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-opacity flex items-center gap-1 ${currentPage === link.id ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
+              >
+                {link.icon && <link.icon size={12} />}
+                {link.name}
+              </button>
+            ))}
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button className="p-2 opacity-50 hover:opacity-100 transition-opacity">
               <Search size={18} />
             </button>
@@ -85,9 +83,40 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
                 </span>
               )}
             </button>
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 opacity-50 hover:opacity-100 transition-opacity"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </motion.div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-white/95 backdrop-blur-lg border-t border-black/5 overflow-hidden"
+          >
+            <div className="flex flex-col p-6 gap-6">
+              {navLinks.map((link) => (
+                <button 
+                  key={link.id}
+                  onClick={() => handleMobileNavigate(link.id)}
+                  className={`text-sm uppercase tracking-[0.2em] font-bold text-left flex items-center gap-3 ${currentPage === link.id ? 'opacity-100' : 'opacity-50'}`}
+                >
+                  {link.icon && <link.icon size={16} />}
+                  {link.name}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

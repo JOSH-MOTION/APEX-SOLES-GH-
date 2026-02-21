@@ -611,10 +611,17 @@ export default function App() {
 
   const fetchShoes = () => {
     fetch("/api/shoes")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then(data => {
         setShoes(data);
         setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false); // Stop loading even on error to show empty state or error UI
       });
   };
 

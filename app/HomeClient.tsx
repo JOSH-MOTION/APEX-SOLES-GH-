@@ -1,8 +1,10 @@
-import { motion } from "motion/react";
+"use client";
+
+import { motion } from "framer-motion";
 import { ShoppingBag, Sparkles, X, Plus, Minus, ArrowRight, Search, LayoutDashboard, PackagePlus, History, Zap, Flame } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { GoogleGenAI } from "@google/genai";
-import { Shoe, CartItem } from "./types";
+import { Shoe, CartItem } from "@/types";
 
 type Page = 'home' | 'drops' | 'culture' | 'archive' | 'admin';
 
@@ -158,7 +160,7 @@ const Hero = () => (
   </section>
 );
 
-const ProductCard = ({ shoe, onAddToCart }: { shoe: Shoe, onAddToCart: (s: Shoe) => void, key?: any }) => (
+const ProductCard = ({ shoe, onAddToCart }: { shoe: Shoe, onAddToCart: (s: Shoe) => void }) => (
   <motion.div 
     layout
     initial={{ opacity: 0, y: 20 }}
@@ -422,14 +424,14 @@ const ArchivePage = () => (
   </section>
 );
 
-const StyleAssistant = ({ shoes }: { shoes: Shoe[] }) => {
+const StyleAssistant = ({ shoes, geminiApiKey }: { shoes: Shoe[], geminiApiKey: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !geminiApiKey) return;
     
     const userMsg = input;
     setInput("");
@@ -437,7 +439,7 @@ const StyleAssistant = ({ shoes }: { shoes: Shoe[] }) => {
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
       const model = "gemini-3-flash-preview";
       
       const prompt = `You are a street culture and sneaker expert for "APEX SOLES GH" in Ghana. 
@@ -475,7 +477,7 @@ const StyleAssistant = ({ shoes }: { shoes: Shoe[] }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           className="fixed bottom-24 right-8 z-50 w-80 h-[450px] glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden"
         >
-          <div className="p-4 border-bottom border-black/5 flex justify-between items-center bg-white">
+          <div className="p-4 border-b border-black/5 flex justify-between items-center bg-white">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-indigo-600" />
               <span className="text-xs uppercase tracking-widest font-bold">Stylist</span>
@@ -602,7 +604,7 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
 
 // --- Main App ---
 
-export default function App() {
+export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
   const [shoes, setShoes] = useState<Shoe[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -765,7 +767,7 @@ export default function App() {
         onUpdateQuantity={updateQuantity}
       />
       
-      <StyleAssistant shoes={shoes} />
+      <StyleAssistant shoes={shoes} geminiApiKey={geminiApiKey} />
     </div>
   );
 }

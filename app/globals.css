@@ -30,4 +30,3 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   @apply bg-black/10 rounded-full;
 }
-

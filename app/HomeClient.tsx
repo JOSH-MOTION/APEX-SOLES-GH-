@@ -1,12 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Sparkles, X, Plus, Minus, ArrowRight, Search, LayoutDashboard, PackagePlus, History, Zap, Flame, Menu } from "lucide-react";
+import { ShoppingBag, X, Plus, Minus, ArrowRight, Search, LayoutDashboard, PackagePlus, History, Zap, Flame, Menu, ChevronRight } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai";
 import { Shoe, CartItem } from "@/types";
 
-type Page = 'home' | 'drops' | 'culture' | 'archive' | 'admin';
+type Page = 'home' | 'drops' | 'culture' | 'archive' | 'admin' | 'men' | 'women' | 'contact';
 
 // --- Components ---
 
@@ -16,20 +15,15 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
   onNavigate: (page: Page) => void,
   currentPage: Page
 }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const navLinks = [
-    { name: 'Drops', id: 'drops' as Page },
-    { name: 'Culture', id: 'culture' as Page },
-    { name: 'Archive', id: 'archive' as Page },
-    { name: 'Admin', id: 'admin' as Page, icon: LayoutDashboard },
+    { name: 'HOME', id: 'home' as Page },
+    { name: 'MEN', id: 'men' as Page },
+    { name: 'WOMEN', id: 'women' as Page },
+    { name: 'COLLECTION', id: 'archive' as Page },
+    { name: 'POST', id: 'admin' as Page },
+    { name: 'CONTACT US', id: 'contact' as Page },
   ];
 
   const handleMobileNavigate = (page: Page) => {
@@ -38,78 +32,73 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled || isMobileMenuOpen ? 'py-4 bg-white/80 backdrop-blur-md border-b border-black/5 shadow-sm' : 'py-8 bg-transparent'}`}>
-      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+    <nav className="sticky top-0 z-50 bg-[#0a0a0c] border-b border-white/5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex justify-between items-center">
+        <div 
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => handleMobileNavigate('home')}
         >
-          <span className="font-serif italic text-2xl font-bold tracking-tighter">APEX SOLES GH</span>
-        </motion.div>
+          <span className="font-black text-2xl tracking-tighter text-white flex items-center">
+            <span className="text-orange-500">A</span>PEX SOLES <span className="text-orange-500 ml-1">GH</span>
+          </span>
+        </div>
         
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex gap-4 md:gap-8 items-center"
-        >
-          <div className="hidden md:flex gap-8 items-center mr-4">
-            {navLinks.map((link) => (
-              <button 
-                key={link.id}
-                onClick={() => onNavigate(link.id)}
-                className={`text-[10px] uppercase tracking-[0.2em] font-bold transition-opacity flex items-center gap-1 ${currentPage === link.id ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
-              >
-                {link.icon && <link.icon size={12} />}
-                {link.name}
-              </button>
-            ))}
-          </div>
-          
-          <div className="flex items-center gap-2 md:gap-4">
-            <button className="p-2 opacity-50 hover:opacity-100 transition-opacity">
-              <Search size={18} />
-            </button>
+        <div className="hidden lg:flex gap-10 items-center">
+          {navLinks.map((link) => (
             <button 
-              onClick={onOpenCart}
-              className="relative p-2 glass-panel rounded-full hover:bg-black hover:text-white transition-all duration-300"
+              key={link.id}
+              onClick={() => onNavigate(link.id)}
+              className={`text-[11px] font-bold tracking-[0.15em] transition-colors ${currentPage === link.id ? 'text-orange-500' : 'text-gray-400 hover:text-white'}`}
             >
-              <ShoppingBag size={18} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                  {cartCount}
-                </span>
-              )}
+              {link.name}
             </button>
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 opacity-50 hover:opacity-100 transition-opacity"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+          ))}
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center bg-white/5 rounded-full px-4 py-2 border border-white/10">
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="bg-transparent text-xs text-white outline-none w-32"
+            />
+            <Search size={14} className="text-gray-500" />
           </div>
-        </motion.div>
+          <button 
+            onClick={onOpenCart}
+            className="relative p-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <ShoppingBag size={20} />
+            {cartCount > 0 && (
+              <span className="absolute top-1 right-1 bg-orange-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                {cartCount}
+              </span>
+            )}
+          </button>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 text-gray-400 hover:text-white transition-colors"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white/95 backdrop-blur-lg border-t border-black/5 overflow-hidden"
+            className="lg:hidden bg-[#0a0a0c] border-b border-white/5 overflow-hidden"
           >
             <div className="flex flex-col p-6 gap-6">
               {navLinks.map((link) => (
                 <button 
                   key={link.id}
                   onClick={() => handleMobileNavigate(link.id)}
-                  className={`text-sm uppercase tracking-[0.2em] font-bold text-left flex items-center gap-3 ${currentPage === link.id ? 'opacity-100' : 'opacity-50'}`}
+                  className={`text-sm font-bold tracking-widest text-left ${currentPage === link.id ? 'text-orange-500' : 'text-gray-400'}`}
                 >
-                  {link.icon && <link.icon size={16} />}
                   {link.name}
                 </button>
               ))}
@@ -121,110 +110,241 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
   );
 };
 
-const Hero = () => (
-  <section className="min-h-screen flex flex-col justify-center px-6 pt-20 relative overflow-hidden">
-    {/* Creative Background Image */}
-    <div className="absolute inset-0 z-0">
-      <img 
-        src="https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=2070&auto=format&fit=crop" 
-        alt="Sneaker Background" 
-        className="w-full h-full object-cover opacity-[0.15]"
-        referrerPolicy="no-referrer"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#F5F5F0]/50 via-transparent to-[#F5F5F0]" />
-      
-      {/* Floating Decorative Elements */}
-      <div className="absolute top-1/4 left-10 w-64 h-64 bg-black/5 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-black/5 rounded-full blur-3xl animate-pulse delay-1000" />
-    </div>
+const Hero = () => {
+  const thumbnails = [
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1512374382149-4332c6c02151?q=80&w=1000&auto=format&fit=crop",
+  ];
+  const [activeImage, setActiveImage] = useState(thumbnails[0]);
 
-    <div className="relative z-10">
+  return (
+    <section className="relative min-h-screen flex items-center bg-[#0a0a0c] px-6 md:px-12 lg:px-24 overflow-hidden">
+      {/* Background Image Layer */}
+      <div className="absolute inset-0 z-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeImage}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 0.4, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0"
+          >
+            <img 
+              src={activeImage} 
+              alt="Background Sneaker" 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            {/* Glow Effect */}
+            <div className="absolute inset-0 bg-orange-500/10 blur-[120px] -z-10" />
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0c] via-[#0a0a0c]/90 to-[#0a0a0c]/40 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0c]/40 via-transparent to-[#0a0a0c] z-[1]" />
+      </div>
+
+      {/* Decorative Text */}
+      <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
+        <motion.h2 
+          key={activeImage}
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 0.03, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-[30vw] font-black text-white uppercase tracking-tighter select-none whitespace-nowrap"
+        >
+          APEX SOLES
+        </motion.h2>
+      </div>
+
+      <div className="relative z-10 w-full max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left Content */}
+          <div className="lg:col-span-7 space-y-10">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="inline-flex items-center gap-3 px-4 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full"
+            >
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-orange-500 text-[10px] font-black tracking-[0.3em] uppercase">PREMIUM SELECTION 2026</span>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-4"
+            >
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-[0.8] uppercase italic tracking-tighter">
+                ELEVATE <br />
+                <span className="text-orange-500">YOUR</span> <br />
+                SOLE
+              </h1>
+              <p className="text-gray-400 text-sm md:text-lg max-w-lg leading-relaxed font-medium uppercase tracking-wide">
+                Accra's most exclusive sneaker destination. <br />
+                We source the grails, you wear the heat.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-wrap items-center gap-8"
+            >
+              <button 
+                onClick={() => {
+                  const el = document.getElementById('collection');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="bg-orange-500 text-white px-12 py-5 rounded-md font-black text-xs tracking-widest uppercase hover:bg-orange-600 transition-all shadow-[0_0_40px_rgba(249,115,22,0.4)] group flex items-center gap-3"
+              >
+                SHOP NOW <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">SWITCH STYLE:</span>
+                <div className="flex gap-3">
+                  {thumbnails.map((thumb, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImage(thumb)}
+                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${activeImage === thumb ? 'border-orange-500 scale-110 shadow-lg' : 'border-white/10 hover:border-white/30'}`}
+                    >
+                      <img src={thumb} className="w-full h-full object-cover" alt="" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const ProductDetail = ({ shoe, onClose, onAddToCart }: { shoe: Shoe, onClose: () => void, onAddToCart: (s: Shoe) => void }) => (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[100] bg-[#0a0a0c] flex flex-col lg:flex-row overflow-y-auto"
+  >
+    <button onClick={onClose} className="absolute top-6 right-6 z-[110] p-3 bg-white/5 rounded-full text-white hover:bg-orange-500 transition-all">
+      <X size={24} />
+    </button>
+    
+    <div className="lg:w-1/2 h-[50vh] lg:h-screen relative bg-white/5 flex items-center justify-center p-12">
+      <motion.img 
+        initial={{ scale: 0.8, rotate: -10 }}
+        animate={{ scale: 1, rotate: 0 }}
+        src={shoe.image_url} 
+        alt={shoe.name} 
+        className="max-w-full max-h-full object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.5)]" 
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(249,115,22,0.1),transparent_70%)]" />
+    </div>
+    
+    <div className="lg:w-1/2 p-8 lg:p-24 flex flex-col justify-center space-y-10">
+      <div className="space-y-4">
+        <motion.span 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-orange-500 text-xs font-black tracking-widest uppercase"
+        >
+          {shoe.category}
+        </motion.span>
+        <motion.h2 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-5xl lg:text-8xl font-black italic uppercase tracking-tighter text-white leading-none"
+        >
+          {shoe.name}
+        </motion.h2>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-3xl font-mono font-black text-orange-500"
+        >
+          GH₵ {shoe.price.toLocaleString()}
+        </motion.p>
+      </div>
+      
       <motion.p 
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="text-xs uppercase tracking-[0.3em] font-bold mb-4 opacity-60"
-      >
-        Accra / Ghana / Worldwide
-      </motion.p>
-      <motion.h1 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="editorial-title mb-8"
-      >
-        Apex <br />
-        <span className="ml-[0.1em]">Culture</span>
-      </motion.h1>
-      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="max-w-md"
+        transition={{ delay: 0.3 }}
+        className="text-gray-400 text-lg leading-relaxed max-w-xl"
       >
-        <p className="text-lg opacity-70 leading-relaxed mb-8">
-          The ultimate destination for exclusive sneakers in Ghana. Elevate your sole game with APEX SOLES GH.
-        </p>
-        <button className="flex items-center gap-4 group">
-          <span className="text-sm uppercase tracking-widest font-bold">Shop Latest Drops</span>
-          <div className="w-10 h-10 rounded-full border border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-all">
-            <ArrowRight size={16} />
-          </div>
+        {shoe.description}
+      </motion.p>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="space-y-6"
+      >
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Colorway</p>
+          <p className="text-white font-bold">{shoe.color}</p>
+        </div>
+        
+        <button 
+          onClick={() => {
+            onAddToCart(shoe);
+            onClose();
+          }}
+          className="w-full lg:w-fit bg-orange-500 text-white px-16 py-5 rounded-md font-black text-sm tracking-widest uppercase hover:bg-orange-600 transition-all shadow-[0_0_30px_rgba(249,115,22,0.3)]"
+        >
+          ADD TO BAG
         </button>
       </motion.div>
     </div>
-    
-    <motion.div 
-      initial={{ opacity: 0, x: 100 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 1.2, ease: "easeOut" }}
-      className="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[45%] aspect-square pointer-events-none z-10"
-    >
-      <img 
-        src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1974&auto=format&fit=crop" 
-        alt="Featured Sneaker" 
-        className="w-full h-full object-contain rotate-[-10deg] drop-shadow-2xl"
-        referrerPolicy="no-referrer"
-      />
-    </motion.div>
-  </section>
+  </motion.div>
 );
 
-const ProductCard = ({ shoe, onAddToCart }: { shoe: Shoe, onAddToCart: (s: Shoe) => void }) => (
-  <motion.div 
-    layout
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    className="group"
+const ProductCard = ({ shoe, onAddToCart, onClick }: { shoe: Shoe, onAddToCart: (s: Shoe) => void, onClick: (s: Shoe) => void }) => (
+  <div 
+    onClick={() => onClick(shoe)}
+    className="group bg-white/5 rounded-2xl border border-white/5 overflow-hidden hover:shadow-[0_0_30px_rgba(249,115,22,0.1)] transition-all duration-500 cursor-pointer"
   >
-    <div className="aspect-[4/5] bg-white overflow-hidden relative mb-4 rounded-2xl">
+    <div className="aspect-square bg-white/5 relative overflow-hidden">
       <img 
         src={shoe.image_url} 
         alt={shoe.name} 
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         referrerPolicy="no-referrer"
       />
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
       <button 
-        onClick={() => onAddToCart(shoe)}
-        className="absolute bottom-4 right-4 bg-white text-black p-4 rounded-full shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-black hover:text-white"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddToCart(shoe);
+        }}
+        className="absolute bottom-4 right-4 bg-orange-500 text-white p-3 rounded-full shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all hover:bg-orange-600 z-10"
       >
         <Plus size={20} />
       </button>
-      <div className="absolute top-4 left-4">
-        <span className="text-[10px] uppercase tracking-widest font-bold bg-black text-white px-2 py-1 rounded">
-          {shoe.category}
-        </span>
-      </div>
     </div>
-    <div className="flex justify-between items-start">
-      <div>
-        <h3 className="font-medium text-lg">{shoe.name}</h3>
-        <p className="text-sm opacity-50">{shoe.color}</p>
+    <div className="p-5">
+      <div className="flex justify-between items-start mb-1">
+        <h3 className="font-bold text-white group-hover:text-orange-500 transition-colors">{shoe.name}</h3>
+        <span className="font-mono font-bold text-sm text-orange-500">GH₵ {shoe.price.toLocaleString()}</span>
       </div>
-      <p className="font-mono text-sm font-bold">GH₵ {shoe.price.toLocaleString()}</p>
+      <p className="text-xs text-gray-500 mb-3">{shoe.color}</p>
+      <span className="text-[10px] font-black uppercase tracking-widest text-white/40 bg-white/5 px-2 py-1 rounded">
+        {shoe.category}
+      </span>
     </div>
-  </motion.div>
+  </div>
 );
 
 const AdminPanel = ({ onShoeAdded }: { onShoeAdded: () => void }) => {
@@ -270,93 +390,86 @@ const AdminPanel = ({ onShoeAdded }: { onShoeAdded: () => void }) => {
   };
 
   return (
-    <section className="min-h-screen pt-32 px-6 max-w-2xl mx-auto">
-      <div className="flex items-center gap-4 mb-12">
-        <div className="p-3 bg-black text-white rounded-2xl">
-          <PackagePlus size={24} />
-        </div>
-        <div>
-          <h2 className="font-serif italic text-4xl">Post New Kicks</h2>
-          <p className="text-xs uppercase tracking-widest font-bold opacity-50">Admin Inventory Management</p>
-        </div>
-      </div>
+    <section className="py-20 px-6 max-w-2xl mx-auto">
+      <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">Inventory Management</h2>
+      <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em] mb-10">Add new sneakers to the shop catalog.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-6 glass-panel p-8 rounded-3xl">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white/5 p-8 rounded-2xl border border-white/5 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Model Name</label>
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Model Name</label>
             <input 
               required
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full bg-[#F5F5F0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-black/10"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50"
               placeholder="e.g. Apex Velocity X"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Price (GHS)</label>
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Price (GHS)</label>
             <input 
               required
               type="number"
               value={formData.price}
               onChange={e => setFormData({...formData, price: e.target.value})}
-              className="w-full bg-[#F5F5F0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-black/10"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50"
               placeholder="e.g. 1500"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Category</label>
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Category</label>
             <select 
               value={formData.category}
               onChange={e => setFormData({...formData, category: e.target.value})}
-              className="w-full bg-[#F5F5F0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-black/10"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50"
             >
-              <option>Performance</option>
-              <option>Lifestyle</option>
-              <option>Basketball</option>
-              <option>Outdoor</option>
-              <option>Limited</option>
-              <option>Classic</option>
+              <option className="bg-[#0a0a0c]">Men</option>
+              <option className="bg-[#0a0a0c]">Women</option>
+              <option className="bg-[#0a0a0c]">Unisex</option>
+              <option className="bg-[#0a0a0c]">Performance</option>
+              <option className="bg-[#0a0a0c]">Lifestyle</option>
+              <option className="bg-[#0a0a0c]">Limited</option>
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Colorway</label>
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Colorway</label>
             <input 
               required
               value={formData.color}
               onChange={e => setFormData({...formData, color: e.target.value})}
-              className="w-full bg-[#F5F5F0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-black/10"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50"
               placeholder="e.g. Electric Volt"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Image URL (Unsplash preferred)</label>
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Image URL</label>
           <input 
             required
             value={formData.image_url}
             onChange={e => setFormData({...formData, image_url: e.target.value})}
-            className="w-full bg-[#F5F5F0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-black/10"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50"
             placeholder="https://images.unsplash.com/..."
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Description</label>
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Description</label>
           <textarea 
             required
             rows={4}
             value={formData.description}
             onChange={e => setFormData({...formData, description: e.target.value})}
-            className="w-full bg-[#F5F5F0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 ring-black/10 resize-none"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50 resize-none"
             placeholder="Tell the story behind this pair..."
           />
         </div>
 
         <button 
           disabled={isSubmitting}
-          className="w-full bg-black text-white py-4 rounded-xl uppercase tracking-[0.2em] text-xs font-bold hover:bg-zinc-800 transition-all disabled:opacity-50"
+          className="w-full bg-orange-500 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
         >
           {isSubmitting ? "Posting..." : "Post Sneaker"}
         </button>
@@ -366,28 +479,31 @@ const AdminPanel = ({ onShoeAdded }: { onShoeAdded: () => void }) => {
 };
 
 const DropsPage = () => (
-  <section className="min-h-screen pt-32 px-6 max-w-7xl mx-auto">
-    <div className="flex items-center gap-4 mb-12">
-      <div className="p-3 bg-orange-500 text-white rounded-2xl">
-        <Zap size={24} />
-      </div>
-      <div>
-        <h2 className="font-serif italic text-5xl">Upcoming Drops</h2>
-        <p className="text-xs uppercase tracking-widest font-bold opacity-50">Accra's Most Anticipated Releases</p>
-      </div>
-    </div>
+  <section className="py-20 px-6 max-w-7xl mx-auto">
+    <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">Upcoming Drops</h2>
+    <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em] mb-12">Don't miss out on the latest heat.</p>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {[1, 2].map(i => (
-        <div key={i} className="relative aspect-[16/9] rounded-3xl overflow-hidden group">
-          <img 
-            src={`https://images.unsplash.com/photo-1514989940723-e8e51635b782?q=80&w=1200&auto=format&fit=crop`} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-8 flex flex-col justify-end">
-            <span className="text-[10px] uppercase tracking-widest font-bold text-orange-500 mb-2">Dropping in 2 Days</span>
-            <h3 className="text-white text-3xl font-serif italic mb-2">Apex "Phoenix" GHS 2,800</h3>
-            <p className="text-white/60 text-sm max-w-md">The legendary Phoenix colorway returns. Limited to 100 pairs at our Osu flagship store.</p>
+        <div key={i} className="bg-white/5 rounded-3xl border border-white/5 overflow-hidden shadow-xl group">
+          <div className="aspect-video relative overflow-hidden">
+            <img 
+              src={`https://images.unsplash.com/photo-1514989940723-e8e51635b782?q=80&w=1200&auto=format&fit=crop`} 
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-md">
+              Coming Soon
+            </div>
+          </div>
+          <div className="p-8">
+            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Apex "Phoenix"</h3>
+            <p className="text-gray-400 mb-6 text-sm leading-relaxed">The legendary Phoenix colorway returns. Limited to 100 pairs at our Osu flagship store.</p>
+            <div className="flex justify-between items-center">
+              <span className="font-mono font-black text-xl text-orange-500">GH₵ 2,800</span>
+              <button className="text-white font-black uppercase text-xs tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+                Notify Me <ChevronRight size={18} className="text-orange-500" />
+              </button>
+            </div>
           </div>
         </div>
       ))}
@@ -396,29 +512,21 @@ const DropsPage = () => (
 );
 
 const CulturePage = () => (
-  <section className="min-h-screen pt-32 px-6 max-w-7xl mx-auto">
-    <div className="flex items-center gap-4 mb-12">
-      <div className="p-3 bg-indigo-600 text-white rounded-2xl">
-        <Flame size={24} />
-      </div>
-      <div>
-        <h2 className="font-serif italic text-5xl">Street Culture</h2>
-        <p className="text-xs uppercase tracking-widest font-bold opacity-50">Stories from the GH Sneaker Scene</p>
-      </div>
-    </div>
+  <section className="py-20 px-6 max-w-7xl mx-auto">
+    <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">Street Culture</h2>
+    <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em] mb-12">Stories from the heart of Accra.</p>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       {[1, 2, 3].map(i => (
-        <div key={i} className="space-y-4">
-          <div className="aspect-square rounded-3xl overflow-hidden">
+        <div key={i} className="group cursor-pointer">
+          <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-4 border border-white/5">
             <img 
               src={`https://images.unsplash.com/photo-1523398002811-999ca8dec234?q=80&w=800&auto=format&fit=crop`} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               referrerPolicy="no-referrer"
             />
           </div>
-          <span className="text-[10px] uppercase tracking-widest font-bold opacity-40">Editorial / Feb 2026</span>
-          <h3 className="text-2xl font-serif italic">How Accra became the sneaker capital of West Africa</h3>
-          <button className="text-xs uppercase tracking-widest font-bold border-b border-black pb-1">Read Story</button>
+          <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-2">Editorial / Feb 2026</p>
+          <h3 className="text-xl font-black italic uppercase tracking-tighter text-white group-hover:text-orange-500 transition-colors">How Accra became the sneaker capital of West Africa</h3>
         </div>
       ))}
     </div>
@@ -426,132 +534,92 @@ const CulturePage = () => (
 );
 
 const ArchivePage = () => (
-  <section className="min-h-screen pt-32 px-6 max-w-7xl mx-auto">
-    <div className="flex items-center gap-4 mb-12">
-      <div className="p-3 bg-zinc-800 text-white rounded-2xl">
-        <History size={24} />
-      </div>
-      <div>
-        <h2 className="font-serif italic text-5xl">The Archive</h2>
-        <p className="text-xs uppercase tracking-widest font-bold opacity-50">Past Grails & Sold Out Classics</p>
-      </div>
-    </div>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-        <div key={i} className="space-y-2">
-          <div className="aspect-square bg-white rounded-2xl overflow-hidden">
-            <img 
-              src={`https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=400&auto=format&fit=crop`} 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
+  <section className="py-20 px-6 max-w-7xl mx-auto">
+    <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">The Archive</h2>
+    <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em] mb-12">Past grails and sold out classics.</p>
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+        <div key={i} className="aspect-square bg-white/5 rounded-xl overflow-hidden relative group border border-white/5">
+          <img 
+            src={`https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=400&auto=format&fit=crop`} 
+            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 opacity-50 group-hover:opacity-100"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="text-orange-500 text-[10px] font-black uppercase tracking-widest border border-orange-500/50 px-2 py-1 rounded">Sold Out</span>
           </div>
-          <p className="text-[10px] uppercase tracking-widest font-bold">Sold Out / 2025</p>
         </div>
       ))}
     </div>
   </section>
 );
 
-const StyleAssistant = ({ shoes, geminiApiKey }: { shoes: Shoe[], geminiApiKey: string }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
+const ContactPage = () => (
+  <section className="py-20 px-6 max-w-4xl mx-auto">
+    <div className="text-center mb-16">
+      <h2 className="text-5xl font-black italic uppercase tracking-tighter mb-4">Get In Touch</h2>
+      <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">We're here to help with your sneaker needs.</p>
+    </div>
 
-  const handleSend = async () => {
-    if (!input.trim() || !geminiApiKey) return;
-    
-    const userMsg = input;
-    setInput("");
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-    setIsTyping(true);
-
-    try {
-      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-      const model = "gemini-3-flash-preview";
-      
-      const prompt = `You are a street culture and sneaker expert for "APEX SOLES GH" in Ghana. 
-      Here is our current inventory: ${JSON.stringify(shoes.map(s => ({ name: s.name, category: s.category, description: s.description, price: s.price })))}.
-      The user is asking for advice: "${userMsg}".
-      Provide a concise, hype-focused recommendation from our inventory. Use a bit of street slang but stay professional and helpful. Represent the APEX SOLES brand with high energy!`;
-
-      const result = await ai.models.generateContent({
-        model,
-        contents: prompt,
-      });
-
-      setMessages(prev => [...prev, { role: 'assistant', content: result.text || "I'm sorry, I couldn't find the perfect match. Could you tell me more about your style?" }]);
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble connecting to my style database. Please try again later." }]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  return (
-    <>
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 z-40 bg-black text-white p-4 rounded-full shadow-2xl flex items-center gap-2 hover:scale-105 transition-transform"
-      >
-        <Sparkles size={20} />
-        <span className="text-xs uppercase tracking-widest font-bold pr-2">Style Assistant</span>
-      </button>
-
-      {isOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="fixed bottom-24 right-8 z-50 w-80 h-[450px] glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-        >
-          <div className="p-4 border-b border-black/5 flex justify-between items-center bg-white">
-            <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-indigo-600" />
-              <span className="text-xs uppercase tracking-widest font-bold">Stylist</span>
-            </div>
-            <button onClick={() => setIsOpen(false)}><X size={16} /></button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-            {messages.length === 0 && (
-              <p className="text-sm opacity-50 italic text-center mt-10">
-                "I'm looking for something formal but modern..."
-              </p>
-            )}
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-black text-white' : 'bg-white border border-black/5'}`}>
-                  {m.content}
-                </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="space-y-8">
+        <div className="bg-white/5 p-8 rounded-3xl border border-white/5">
+          <h3 className="text-xl font-black italic uppercase tracking-tighter mb-6 text-orange-500">Contact Info</h3>
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
+                <Search size={20} />
               </div>
-            ))}
-            {isTyping && <div className="text-[10px] uppercase tracking-widest font-bold opacity-30 animate-pulse">Stylist is thinking...</div>}
-          </div>
-
-          <div className="p-4 bg-white border-t border-black/5">
-            <div className="flex gap-2">
-              <input 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask for recommendations..."
-                className="flex-1 bg-[#F5F5F0] rounded-full px-4 py-2 text-sm focus:outline-none"
-              />
-              <button 
-                onClick={handleSend}
-                className="bg-black text-white p-2 rounded-full"
-              >
-                <ArrowRight size={16} />
-              </button>
+              <div>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email</p>
+                <p className="text-sm font-bold">Apexsoles1@gmail.com</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Location</p>
+                <p className="text-sm font-bold">Osu, Accra, Ghana</p>
+              </div>
             </div>
           </div>
-        </motion.div>
-      )}
-    </>
-  );
-};
+        </div>
+
+        <div className="bg-white/5 p-8 rounded-3xl border border-white/5">
+          <h3 className="text-xl font-black italic uppercase tracking-tighter mb-6 text-orange-500">Socials</h3>
+          <div className="flex gap-4">
+            <a href="https://www.instagram.com/apexsoles.gh?igsh=MTl2MmxmYzJ6M3l4Yg%3D%3D&utm_source=qr" target="_blank" className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-orange-500 transition-all">
+              <Search size={20} />
+            </a>
+            <a href="https://www.tiktok.com/@apexsolesgh?_r=1&_t=ZS-945IWNArlTx" target="_blank" className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-orange-500 transition-all">
+              <ShoppingBag size={20} />
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <form className="space-y-6 bg-white/5 p-8 rounded-3xl border border-white/5 shadow-xl">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Full Name</label>
+          <input className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50" placeholder="John Doe" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Email Address</label>
+          <input className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50" placeholder="john@example.com" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Message</label>
+          <textarea rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-1 ring-orange-500/50 resize-none" placeholder="How can we help?" />
+        </div>
+        <button className="w-full bg-orange-500 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 transition-all shadow-[0_0_20px_rgba(249,115,22,0.3)]">
+          Send Message
+        </button>
+      </form>
+    </div>
+  </section>
+);
 
 const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: { 
   isOpen: boolean, 
@@ -563,96 +631,107 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
 
   return (
     <>
-      {isOpen && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60]" onClick={onClose} />}
-      <motion.div 
-        initial={{ x: "100%" }}
-        animate={{ x: isOpen ? 0 : "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col"
-      >
-        <div className="p-6 flex justify-between items-center border-b border-black/5">
-          <h2 className="font-serif italic text-2xl">Your Kicks</h2>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full"><X size={20} /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-          {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center opacity-30">
-              <ShoppingBag size={48} className="mb-4" />
-              <p className="uppercase tracking-widest text-xs font-bold">No kicks in the box</p>
-            </div>
-          ) : (
-            items.map(item => (
-              <div key={item.id} className="flex gap-4">
-                <div className="w-24 h-24 bg-[#F5F5F0] rounded-xl overflow-hidden">
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <h4 className="font-medium">{item.name}</h4>
-                    <p className="font-mono text-sm">GH₵ {(item.price * item.quantity).toLocaleString()}</p>
-                  </div>
-                  <p className="text-xs opacity-50 mb-3">{item.color}</p>
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => onUpdateQuantity(item.id, -1)}
-                      className="w-6 h-6 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <span className="text-sm font-mono">{item.quantity}</span>
-                    <button 
-                      onClick={() => onUpdateQuantity(item.id, 1)}
-                      className="w-6 h-6 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </div>
-                </div>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" 
+              onClick={onClose} 
+            />
+            <motion.div 
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#0a0a0c] z-[70] shadow-2xl flex flex-col border-l border-white/5"
+            >
+              <div className="p-6 flex justify-between items-center border-b border-white/5 bg-white/5">
+                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Shopping Bag</h2>
+                <button onClick={onClose} className="p-2 text-gray-500 hover:text-white transition-colors"><X size={24} /></button>
               </div>
-            ))
-          )}
-        </div>
 
-        <div className="p-6 border-t border-black/5 bg-[#F5F5F0]">
-          <div className="flex justify-between mb-6">
-            <span className="uppercase tracking-widest text-xs font-bold opacity-50">Total</span>
-            <span className="font-mono text-xl font-bold">GH₵ {total.toLocaleString()}</span>
-          </div>
-          <button 
-            disabled={items.length === 0}
-            className="w-full bg-black text-white py-4 rounded-full uppercase tracking-[0.2em] text-xs font-bold hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Checkout
-          </button>
-        </div>
-      </motion.div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {items.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                    <ShoppingBag size={48} className="mb-4 opacity-20" />
+                    <p className="font-black uppercase tracking-widest text-xs">Your bag is empty</p>
+                  </div>
+                ) : (
+                  items.map(item => (
+                    <div key={item.id} className="flex gap-4 group">
+                      <div className="w-24 h-24 bg-white/5 rounded-xl overflow-hidden flex-shrink-0 border border-white/5">
+                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between mb-1">
+                          <h4 className="font-black italic uppercase tracking-tighter text-white">{item.name}</h4>
+                          <p className="font-mono font-black text-orange-500 text-sm">GH₵ {(item.price * item.quantity).toLocaleString()}</p>
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">{item.color}</p>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => onUpdateQuantity(item.id, -1)}
+                            className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="text-xs font-black">{item.quantity}</span>
+                          <button 
+                            onClick={() => onUpdateQuantity(item.id, 1)}
+                            className="w-7 h-7 rounded-md border border-white/10 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="p-6 border-t border-white/5 bg-white/5">
+                <div className="flex justify-between mb-6">
+                  <span className="text-gray-500 font-black uppercase tracking-widest text-[10px]">Subtotal</span>
+                  <span className="text-2xl font-black italic uppercase tracking-tighter text-white">GH₵ {total.toLocaleString()}</span>
+                </div>
+                <button 
+                  disabled={items.length === 0}
+                  className="w-full bg-orange-500 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-orange-600 transition-all shadow-[0_0_20px_rgba(249,115,22,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Checkout
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };
 
 // --- Main App ---
 
-export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
+export default function HomeClient() {
   const [shoes, setShoes] = useState<Shoe[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [selectedShoe, setSelectedShoe] = useState<Shoe | null>(null);
 
   const fetchShoes = () => {
     fetch("/api/shoes")
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch');
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
         setShoes(data);
         setLoading(false);
       })
       .catch(err => {
         console.error(err);
-        setLoading(false); // Stop loading even on error to show empty state or error UI
+        setLoading(false);
       });
   };
 
@@ -688,12 +767,8 @@ export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-2 border-black border-t-transparent rounded-full"
-        />
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -704,47 +779,60 @@ export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
       case 'culture': return <CulturePage />;
       case 'archive': return <ArchivePage />;
       case 'admin': return <AdminPanel onShoeAdded={fetchShoes} />;
+      case 'contact': return <ContactPage />;
+      case 'men':
+      case 'women':
+        return (
+          <section className="px-6 py-20 max-w-7xl mx-auto">
+            <div className="mb-12">
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">{currentPage === 'men' ? "Men's" : "Women's"} Collection</h2>
+              <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">Curated selection for {currentPage}.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {shoes.filter(s => currentPage === 'men' ? s.category !== 'Women' : s.category === 'Women').map(shoe => (
+                <ProductCard key={shoe.id} shoe={shoe} onAddToCart={addToCart} onClick={setSelectedShoe} />
+              ))}
+            </div>
+          </section>
+        );
       default: return (
         <>
           <Hero />
           
-          <section className="px-6 py-24 max-w-7xl mx-auto">
-            <div className="flex justify-between items-end mb-12">
+          <section id="collection" className="px-6 py-20 max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
               <div>
-                <h2 className="font-serif italic text-5xl mb-2">The Rotation</h2>
-                <p className="opacity-50 uppercase tracking-widest text-xs font-bold">Fresh drops for your collection</p>
+                <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">The Collection</h2>
+                <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">Curated sneakers for the modern rotation.</p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-2">
                 {["All", "Performance", "Lifestyle", "Limited"].map(cat => (
-                  <button key={cat} className="text-xs uppercase tracking-widest font-bold opacity-40 hover:opacity-100 transition-opacity">
+                  <button key={cat} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-md border border-white/10 hover:bg-orange-500 hover:text-white transition-all">
                     {cat}
                   </button>
                 ))}
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {shoes.map(shoe => (
-                <ProductCard key={shoe.id} shoe={shoe} onAddToCart={addToCart} />
+                <ProductCard key={shoe.id} shoe={shoe} onAddToCart={addToCart} onClick={setSelectedShoe} />
               ))}
             </div>
           </section>
 
-          <section className="bg-black text-white py-32 px-6 overflow-hidden relative">
-            <div className="max-w-4xl mx-auto text-center relative z-10">
-              <h2 className="editorial-title text-white mb-12">Join the Club</h2>
-              <p className="text-xl opacity-60 mb-12">Get early access to limited releases and exclusive events.</p>
-              <div className="flex max-w-md mx-auto gap-4">
+          <section className="bg-white/5 py-32 px-6 border-y border-white/5">
+            <div className="max-w-xl mx-auto text-center">
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Stay in the Loop</h2>
+              <p className="text-gray-400 mb-10 text-sm">Get notified about upcoming drops and exclusive events in Accra.</p>
+              <div className="flex gap-2">
                 <input 
                   type="email" 
                   placeholder="Email Address" 
-                  className="flex-1 bg-white/10 border border-white/20 rounded-full px-6 py-4 focus:outline-none focus:border-white/40"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-6 py-4 text-sm focus:outline-none focus:ring-1 ring-orange-500/50"
                 />
-                <button className="bg-white text-black px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs">Join</button>
+                <button className="bg-orange-500 text-white px-10 py-4 rounded-md font-black uppercase tracking-widest text-xs hover:bg-orange-600 transition-colors">Join</button>
               </div>
-            </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-               <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_70%)]" />
             </div>
           </section>
         </>
@@ -753,7 +841,7 @@ export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
   };
 
   return (
-    <div className="relative">
+    <div className="min-h-screen bg-[#0a0a0c] text-white font-sans selection:bg-orange-500 selection:text-white">
       <Navbar 
         cartCount={cart.reduce((s, i) => s + i.quantity, 0)} 
         onOpenCart={() => setIsCartOpen(true)} 
@@ -765,27 +853,43 @@ export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
         {renderPage()}
       </main>
 
-      <footer className="px-6 py-12 border-t border-black/5 max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
-        <div className="space-y-4">
-          <span className="font-serif italic text-3xl font-bold">APEX SOLES GH</span>
-          <p className="text-xs opacity-50 max-w-xs">The premium sneaker destination in Ghana. We bring the heat to your feet.</p>
-          <div className="flex gap-4">
-            <a href="https://www.instagram.com/apexsoles.gh?igsh=MTl2MmxmYzJ6M3l4Yg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest font-bold hover:underline">Instagram</a>
-            <a href="https://www.tiktok.com/@apexsolesgh?_r=1&_t=ZS-945IWNArlTx" target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest font-bold hover:underline">TikTok</a>
-            <a href="https://snapchat.com/t/lF9kjWNu" target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest font-bold hover:underline">Snapchat</a>
+      <footer className="px-6 py-16 border-t border-white/5 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+          <div className="col-span-1 md:col-span-2 space-y-6">
+            <span className="font-bold text-2xl tracking-tight text-white">APEX SOLES GH</span>
+            <p className="text-gray-400 max-w-sm leading-relaxed">
+              The premium sneaker destination in Ghana. We bring the heat to your feet with curated collections and exclusive drops.
+            </p>
+            <div className="flex gap-6">
+              <a href="https://www.instagram.com/apexsoles.gh?igsh=MTl2MmxmYzJ6M3l4Yg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-orange-500 transition-colors"><Search size={20} /></a>
+              <a href="https://www.tiktok.com/@apexsolesgh?_r=1&_t=ZS-945IWNArlTx" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-orange-500 transition-colors"><ShoppingBag size={20} /></a>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6 uppercase text-xs tracking-widest text-gray-500">Shop</h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li><button onClick={() => handleNavigate('home')} className="text-gray-400 hover:text-white transition-colors">All Sneakers</button></li>
+              <li><button onClick={() => handleNavigate('drops')} className="text-gray-400 hover:text-white transition-colors">New Arrivals</button></li>
+              <li><button onClick={() => handleNavigate('archive')} className="text-gray-400 hover:text-white transition-colors">Archive</button></li>
+              <li><button onClick={() => handleNavigate('admin')} className="text-gray-400 hover:text-white transition-colors">Admin Panel</button></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6 uppercase text-xs tracking-widest text-gray-500">Support</h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li><a href="mailto:Apexsoles1@gmail.com" className="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+              <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Shipping</a></li>
+              <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Returns</a></li>
+            </ul>
           </div>
         </div>
-        <div className="flex flex-col gap-4">
-          <span className="text-[10px] uppercase tracking-widest font-bold opacity-30">Contact Us</span>
-          <a href="mailto:Apexsoles1@gmail.com" className="text-sm font-medium hover:underline">Apexsoles1@gmail.com</a>
-        </div>
-        <div className="flex flex-col gap-4 text-right items-end">
-          <div className="flex gap-8 text-[10px] uppercase tracking-widest font-bold opacity-50">
-            <a href="#" className="hover:opacity-100">Shipping</a>
-            <a href="#" className="hover:opacity-100">Returns</a>
-            <a href="#" className="hover:opacity-100">FAQ</a>
+        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
+          <p>© 2026 APEX SOLES GH</p>
+          <div className="flex gap-8">
+            <a href="https://www.instagram.com/apexsoles.gh?igsh=MTl2MmxmYzJ6M3l4Yg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
+            <a href="https://www.tiktok.com/@apexsolesgh?_r=1&_t=ZS-945IWNArlTx" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">TikTok</a>
+            <a href="https://snapchat.com/t/lF9kjWNu" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Snapchat</a>
           </div>
-          <p className="text-[10px] uppercase tracking-widest font-bold opacity-30">© 2026 APEX SOLES GH</p>
         </div>
       </footer>
 
@@ -796,7 +900,15 @@ export default function HomeClient({ geminiApiKey }: { geminiApiKey: string }) {
         onUpdateQuantity={updateQuantity}
       />
       
-      <StyleAssistant shoes={shoes} geminiApiKey={geminiApiKey} />
+      <AnimatePresence>
+        {selectedShoe && (
+          <ProductDetail 
+            shoe={selectedShoe} 
+            onClose={() => setSelectedShoe(null)} 
+            onAddToCart={addToCart} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

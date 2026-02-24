@@ -14,12 +14,14 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, signInWi
 import { Shoe } from "@/types";
 import Image from "next/image";
 
+// ✅ After
 const Logo = ({ className = "", variant = 'dark', height = 40 }: { className?: string, variant?: 'dark' | 'light', height?: number }) => (
   <div className={`relative ${className}`} style={{ height: `${height}px`, width: `${height * 0.7}px` }}>
     <Image
       src={variant === 'dark' ? "/logo-black.png" : "/logo-white.png"}
       alt="APEX SOLES"
       fill
+      sizes={`${Math.round(height * 0.7)}px`}
       className="object-contain"
       referrerPolicy="no-referrer"
       priority

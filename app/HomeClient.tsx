@@ -28,7 +28,7 @@ const Logo = ({ className = "", variant = 'dark', height = 40 }: {
       sizes={`${Math.round(height * 0.7)}px`}
       className="object-contain"
       priority
-      unoptimized  // ← add this
+      unoptimized  
     />
   </div>
 );
@@ -175,7 +175,7 @@ const Hero = () => {
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1000&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1512374382149-4332c6c02151?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=1600&auto=format&fit=crop",
   ];
   const [activeImage, setActiveImage] = useState(thumbnails[0]);
 

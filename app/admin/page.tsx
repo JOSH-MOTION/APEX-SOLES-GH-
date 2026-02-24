@@ -18,7 +18,7 @@ import Image from "next/image";
 const Logo = ({ className = "", variant = 'dark', height = 40 }: { className?: string, variant?: 'dark' | 'light', height?: number }) => (
   <div className={`relative ${className}`} style={{ height: `${height}px`, width: `${height * 0.7}px` }}>
     <Image
-      src={variant === 'dark' ? "/logo-black.png" : "/logo-white.png"}
+     src={variant === 'dark' ? "/Black.png" : "/White.png"}
       alt="APEX SOLES"
       fill
       sizes={`${Math.round(height * 0.7)}px`}

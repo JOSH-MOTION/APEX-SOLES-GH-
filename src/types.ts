@@ -1,5 +1,5 @@
 export interface Shoe {
-  id: number;
+  id: string | number;
   name: string;
   brand: string;
   price: number;

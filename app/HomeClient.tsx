@@ -1,12 +1,16 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, Plus, Minus, ArrowRight, Search, LayoutDashboard, PackagePlus, History, Zap, Flame, Menu, ChevronRight } from "lucide-react";
+import { ShoppingBag, X, Plus, Minus, ArrowRight, Search, Flame, Menu, ChevronRight, User as UserIcon, LogIn, LogOut, Zap } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { db, auth } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { onAuthStateChanged, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { Shoe, CartItem } from "@/types";
+import { googleProvider } from "@/lib/firebase";
 
-type Page = 'home' | 'drops' | 'culture' | 'archive' | 'admin' | 'men' | 'women' | 'contact';
+type Page = 'home' | 'drops' | 'culture' | 'archive' | 'men' | 'women' | 'contact';
 
 // --- Components ---
 
@@ -23,11 +27,13 @@ const Logo = ({ className = "", variant = 'dark', height = 40 }: { className?: s
   </div>
 );
 
-const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: { 
+const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage, user, onOpenAuth }: { 
   cartCount: number, 
   onOpenCart: () => void,
   onNavigate: (page: Page) => void,
-  currentPage: Page
+  currentPage: Page,
+  user: User | null,
+  onOpenAuth: () => void
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -37,7 +43,6 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
     { name: 'WOMEN', id: 'women' as Page },
     { name: 'CULTURE', id: 'culture' as Page },
     { name: 'COLLECTION', id: 'archive' as Page },
-    { name: 'POST', id: 'admin' as Page },
     { name: 'CONTACT US', id: 'contact' as Page },
   ];
 
@@ -89,6 +94,31 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
             )}
           </button>
           <button 
+            onClick={user ? () => onNavigate('home') : onOpenAuth}
+            className="p-2 text-gray-400 hover:text-black transition-colors flex items-center gap-2"
+          >
+            {user ? (
+              <div className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center border border-black/5 overflow-hidden">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon size={16} className="text-black" />
+                )}
+              </div>
+            ) : (
+              <LogIn size={20} />
+            )}
+          </button>
+          {user && (
+            <button 
+              onClick={() => signOut(auth)}
+              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
+          )}
+          <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-2 text-gray-400 hover:text-black transition-colors"
           >
@@ -115,6 +145,17 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage }: {
                   {link.name}
                 </button>
               ))}
+              {user && (
+                <button 
+                  onClick={() => {
+                    signOut(auth);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-sm font-bold tracking-widest text-left text-red-500"
+                >
+                  LOGOUT
+                </button>
+              )}
             </div>
           </motion.div>
         )}
@@ -373,136 +414,6 @@ const ProductCard = ({ shoe, onAddToCart, onClick }: { shoe: Shoe, onAddToCart: 
   </div>
 );
 
-const AdminPanel = ({ onShoeAdded }: { onShoeAdded: () => void }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    brand: "APEX SOLES",
-    price: "",
-    category: "Lifestyle",
-    description: "",
-    image_url: "",
-    color: ""
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/shoes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, price: parseFloat(formData.price) })
-      });
-      if (response.ok) {
-        alert("Sneaker added successfully!");
-        setFormData({
-          name: "",
-          brand: "APEX SOLES",
-          price: "",
-          category: "Lifestyle",
-          description: "",
-          image_url: "",
-          color: ""
-        });
-        onShoeAdded();
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Failed to add sneaker.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <section className="py-20 px-6 max-w-2xl mx-auto">
-      <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2 text-black">Inventory Management</h2>
-      <p className="text-gray-400 uppercase text-[10px] font-bold tracking-[0.2em] mb-10">Add new sneakers to the shop catalog.</p>
-
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-2xl border border-black/5 shadow-xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Model Name</label>
-            <input 
-              required
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full bg-black/5 border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-1 ring-black/20"
-              placeholder="e.g. Apex Velocity X"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Price (GHS)</label>
-            <input 
-              required
-              type="number"
-              value={formData.price}
-              onChange={e => setFormData({...formData, price: e.target.value})}
-              className="w-full bg-black/5 border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-1 ring-black/20"
-              placeholder="e.g. 1500"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</label>
-            <select 
-              value={formData.category}
-              onChange={e => setFormData({...formData, category: e.target.value})}
-              className="w-full bg-black/5 border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-1 ring-black/20"
-            >
-              <option className="bg-white">Men</option>
-              <option className="bg-white">Women</option>
-              <option className="bg-white">Unisex</option>
-              <option className="bg-white">Performance</option>
-              <option className="bg-white">Lifestyle</option>
-              <option className="bg-white">Limited</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Colorway</label>
-            <input 
-              required
-              value={formData.color}
-              onChange={e => setFormData({...formData, color: e.target.value})}
-              className="w-full bg-black/5 border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-1 ring-black/20"
-              placeholder="e.g. Electric Volt"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Image URL</label>
-          <input 
-            required
-            value={formData.image_url}
-            onChange={e => setFormData({...formData, image_url: e.target.value})}
-            className="w-full bg-black/5 border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-1 ring-black/20"
-            placeholder="https://images.unsplash.com/..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Description</label>
-          <textarea 
-            required
-            rows={4}
-            value={formData.description}
-            onChange={e => setFormData({...formData, description: e.target.value})}
-            className="w-full bg-black/5 border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-1 ring-black/20 resize-none"
-            placeholder="Tell the story behind this pair..."
-          />
-        </div>
-
-        <button 
-          disabled={isSubmitting}
-          className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all disabled:opacity-50 shadow-[0_20px_40px_rgba(0,0,0,0.1)]"
-        >
-          {isSubmitting ? "Posting..." : "Post Sneaker"}
-        </button>
-      </form>
-    </section>
-  );
-};
 
 const DropsPage = () => (
   <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -725,7 +636,7 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
   isOpen: boolean, 
   onClose: () => void, 
   items: CartItem[],
-  onUpdateQuantity: (id: number, delta: number) => void
+  onUpdateQuantity: (id: string | number, delta: number) => void
 }) => {
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -814,25 +725,192 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
 
 // --- Main App ---
 
+const UserAuthModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
+      onClose();
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      onClose();
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl"
+          >
+            <div className="p-10">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-3xl font-black italic uppercase tracking-tighter text-black">
+                    {isLogin ? "Welcome Back" : "Join the Club"}
+                  </h2>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                    {isLogin ? "Sign in to your account" : "Create your Apex Soles account"}
+                  </p>
+                </div>
+                <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEmailAuth} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full bg-black/5 border border-black/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 ring-black/10 transition-all"
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
+                  <input 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full bg-black/5 border border-black/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 ring-black/10 transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-zinc-800 transition-all shadow-xl disabled:opacity-50"
+                >
+                  {loading ? <Zap className="animate-spin mx-auto" size={16} /> : (isLogin ? "Sign In" : "Create Account")}
+                </button>
+              </form>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-black/5"></div>
+                </div>
+                <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
+                  <span className="bg-white px-4 text-gray-300">Or continue with</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleGoogleAuth}
+                className="w-full bg-white border border-black/5 text-black py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 transition-all shadow-sm flex items-center justify-center gap-3"
+              >
+                <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
+                Google
+              </button>
+
+              <p className="mt-8 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+                <button 
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-black hover:underline"
+                >
+                  {isLogin ? "Sign Up" : "Sign In"}
+                </button>
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+
 export default function HomeClient() {
   const [shoes, setShoes] = useState<Shoe[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedShoe, setSelectedShoe] = useState<Shoe | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const fetchShoes = () => {
-    fetch("/api/shoes")
-      .then(res => res.json())
-      .then(data => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const fetchShoes = async () => {
+    if (!db) {
+      // Fallback to API if Firebase is not initialized
+      fetch("/api/shoes")
+        .then(res => res.json())
+        .then(data => {
+          setShoes(data);
+          setLoading(false);
+        });
+      return;
+    }
+    try {
+      const q = query(collection(db, "shoes"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const shoesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as unknown as Shoe[];
+      
+      if (shoesData.length === 0) {
+        // Fallback to API if Firestore is empty (initial setup)
+        const res = await fetch("/api/shoes");
+        const data = await res.json();
         setShoes(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      } else {
+        setShoes(shoesData);
+      }
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      // Fallback to API on error
+      fetch("/api/shoes")
+        .then(res => res.json())
+        .then(data => {
+          setShoes(data);
+          setLoading(false);
+        });
+    }
   };
 
   useEffect(() => {
@@ -850,7 +928,7 @@ export default function HomeClient() {
     setIsCartOpen(true);
   };
 
-  const updateQuantity = (id: number, delta: number) => {
+  const updateQuantity = (id: string | number, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === id) {
         const newQty = Math.max(0, item.quantity + delta);
@@ -878,7 +956,6 @@ export default function HomeClient() {
       case 'drops': return <DropsPage />;
       case 'culture': return <CulturePage />;
       case 'archive': return <ArchivePage />;
-      case 'admin': return <AdminPanel onShoeAdded={fetchShoes} />;
       case 'contact': return <ContactPage />;
       case 'men':
       case 'women':
@@ -947,6 +1024,8 @@ export default function HomeClient() {
         onOpenCart={() => setIsCartOpen(true)} 
         onNavigate={handleNavigate}
         currentPage={currentPage}
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
       />
       
       <main>
@@ -971,7 +1050,6 @@ export default function HomeClient() {
               <li><button onClick={() => handleNavigate('home')} className="text-gray-500 hover:text-black transition-colors">All Sneakers</button></li>
               <li><button onClick={() => handleNavigate('drops')} className="text-gray-500 hover:text-black transition-colors">New Arrivals</button></li>
               <li><button onClick={() => handleNavigate('archive')} className="text-gray-500 hover:text-black transition-colors">Archive</button></li>
-              <li><button onClick={() => handleNavigate('admin')} className="text-gray-500 hover:text-black transition-colors">Admin Panel</button></li>
             </ul>
           </div>
           <div>
@@ -998,6 +1076,11 @@ export default function HomeClient() {
         onClose={() => setIsCartOpen(false)} 
         items={cart} 
         onUpdateQuantity={updateQuantity}
+      />
+
+      <UserAuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
       />
       
       <AnimatePresence>

@@ -17,6 +17,13 @@ export const metadata: Metadata = {
     "streetwear ghana",
     "sneaker store accra",
   ],
+
+  icons: {
+    icon: "/Black.png",
+    shortcut: "/Black.png",
+    apple: "/Black.png",
+  },
+  
   openGraph: {
     title: "APEX SOLES GH | Exclusive Sneakers in Ghana",
     description:

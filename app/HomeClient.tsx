@@ -873,6 +873,7 @@ export default function HomeClient() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
     });

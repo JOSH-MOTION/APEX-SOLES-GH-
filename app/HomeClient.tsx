@@ -15,7 +15,11 @@ type Page = 'home' | 'drops' | 'culture' | 'archive' | 'men' | 'women' | 'contac
 // --- Components ---
 
 // ✅ After
-const Logo = ({ className = "", variant = 'dark', height = 40 }: { className?: string, variant?: 'dark' | 'light', height?: number }) => (
+const Logo = ({ className = "", variant = 'dark', height = 40 }: { 
+  className?: string, 
+  variant?: 'dark' | 'light', 
+  height?: number 
+}) => (
   <div className={`relative ${className}`} style={{ height: `${height}px`, width: `${height * 0.7}px` }}>
     <Image
       src={variant === 'dark' ? "/Black.png" : "/White.png"}
@@ -23,8 +27,8 @@ const Logo = ({ className = "", variant = 'dark', height = 40 }: { className?: s
       fill
       sizes={`${Math.round(height * 0.7)}px`}
       className="object-contain"
-      referrerPolicy="no-referrer"
       priority
+      unoptimized  // ← add this
     />
   </div>
 );

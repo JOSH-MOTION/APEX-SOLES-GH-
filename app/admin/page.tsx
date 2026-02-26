@@ -43,7 +43,10 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
     category: "Lifestyle",
     description: "",
     image_url: "",
-    color: ""
+    color: "",
+    sizes: [] as string[],
+    colors: [] as string[],
+    additional_images: [] as string[]
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -57,37 +60,75 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
         category: editingShoe.category,
         description: editingShoe.description,
         image_url: editingShoe.image_url,
-        color: editingShoe.color
+        color: editingShoe.color,
+        sizes: editingShoe.sizes || [],
+        colors: editingShoe.colors || [editingShoe.color],
+        additional_images: editingShoe.additional_images || []
       });
       setActiveTab('add');
     }
   }, [editingShoe]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isAdditional = false) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onloadend = async () => {
-      try {
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: reader.result }),
-        });
-        const data = await response.json();
-        if (data.url) {
-          setFormData(prev => ({ ...prev, image_url: data.url }));
-        }
-      } catch (error) {
-        console.error("Upload error:", error);
-        alert("Image upload failed.");
-      } finally {
-        setUploading(false);
+    const uploadPromises = Array.from(files).map(file => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = async () => {
+          try {
+            const response = await fetch("/api/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: reader.result }),
+            });
+            const data = await response.json();
+            if (data.url) resolve(data.url);
+            else reject("Upload failed");
+          } catch (error) {
+            reject(error);
+          }
+        };
+      });
+    });
+
+    try {
+      const urls = await Promise.all(uploadPromises);
+      if (isAdditional) {
+        setFormData(prev => ({ 
+          ...prev, 
+          additional_images: [...prev.additional_images, ...urls] 
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, image_url: urls[0] }));
       }
-    };
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Some images failed to upload.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const toggleSize = (size: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(size) 
+        ? prev.sizes.filter(s => s !== size) 
+        : [...prev.sizes, size]
+    }));
+  };
+
+  const toggleColor = (color: string) => {
+    setFormData(prev => ({
+      ...prev,
+      colors: prev.colors.includes(color) 
+        ? prev.colors.filter(c => c !== color) 
+        : [...prev.colors, color]
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,7 +167,10 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
         category: "Lifestyle",
         description: "",
         image_url: "",
-        color: ""
+        color: "",
+        sizes: [],
+        colors: [],
+        additional_images: []
       });
       onShoeAdded();
       setActiveTab('inventory');
@@ -337,7 +381,7 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Colorway</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Main Colorway</label>
                     <input 
                       required
                       value={formData.color}
@@ -348,44 +392,104 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Product Image</label>
-                  <div className="flex flex-col sm:flex-row items-stretch gap-6">
-                    <div className="flex-1 relative group">
-                      <input 
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                      />
-                      <div className="w-full bg-black/5 border-2 border-dashed border-black/10 rounded-3xl px-8 py-12 text-center group-hover:border-black/20 transition-all">
-                        {uploading ? (
-                          <div className="flex flex-col items-center gap-4 text-black">
-                            <Zap className="animate-spin" size={32} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Uploading to Cloudinary...</span>
-                          </div>
-                        ) : formData.image_url ? (
-                          <div className="flex flex-col items-center gap-4 text-emerald-500">
-                            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center">
-                              <PackagePlus size={24} />
+                {/* Multi-select Sizes */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Available Sizes</label>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                    {["US 6", "US 7", "US 8", "US 9", "US 10", "US 11", "US 12", "US 13", "US 14", "US 15"].map(size => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => toggleSize(size)}
+                        className={`py-3 rounded-xl text-[10px] font-black transition-all border ${formData.sizes.includes(size) ? 'bg-black text-white border-black' : 'bg-white text-black border-black/10 hover:border-black'}`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Multi-select Colors */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Available Colors</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Black", "White", "Red", "Blue", "Green", "Yellow", "Grey", "Navy", "Multi"].map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => toggleColor(color)}
+                        className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.colors.includes(color) ? 'bg-black text-white border-black' : 'bg-white text-black border-black/10 hover:border-black'}`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Main Product Image</label>
+                    <div className="flex flex-col sm:flex-row items-stretch gap-6">
+                      <div className="flex-1 relative group">
+                        <input 
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, false)}
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        />
+                        <div className="w-full bg-black/5 border-2 border-dashed border-black/10 rounded-3xl px-8 py-12 text-center group-hover:border-black/20 transition-all">
+                          {uploading ? (
+                            <Zap className="animate-spin mx-auto mb-4" size={32} />
+                          ) : formData.image_url ? (
+                            <div className="text-emerald-500">
+                              <PackagePlus className="mx-auto mb-4" size={32} />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Main Image Ready</span>
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest">Image Ready</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-4 text-gray-400">
-                            <div className="w-12 h-12 bg-black/5 rounded-full flex items-center justify-center">
-                              <Plus size={24} />
+                          ) : (
+                            <div className="text-gray-400">
+                              <Plus className="mx-auto mb-4" size={32} />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Upload Main Image</span>
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest">Click or drag to upload</span>
-                          </div>
-                        )}
+                          )}
+                        </div>
+                      </div>
+                      {formData.image_url && (
+                        <div className="w-full sm:w-48 h-48 rounded-3xl overflow-hidden border border-black/5 shadow-lg">
+                          <img src={formData.image_url} className="w-full h-full object-cover" alt="Preview" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Additional Images (Different Colors/Angles)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {formData.additional_images.map((url, i) => (
+                        <div key={i} className="relative group aspect-square rounded-2xl overflow-hidden border border-black/5">
+                          <img src={url} className="w-full h-full object-cover" alt="" />
+                          <button 
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, additional_images: prev.additional_images.filter((_, idx) => idx !== i) }))}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="relative group aspect-square">
+                        <input 
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, true)}
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        />
+                        <div className="w-full h-full bg-black/5 border-2 border-dashed border-black/10 rounded-2xl flex flex-col items-center justify-center group-hover:border-black/20 transition-all">
+                          <PlusCircle size={24} className="text-gray-400 mb-2" />
+                          <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Add More</span>
+                        </div>
                       </div>
                     </div>
-                    {formData.image_url && (
-                      <div className="w-full sm:w-48 h-48 rounded-3xl overflow-hidden border border-black/5 shadow-lg">
-                        <img src={formData.image_url} className="w-full h-full object-cover" alt="Preview" />
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -414,7 +518,10 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
                           category: "Lifestyle",
                           description: "",
                           image_url: "",
-                          color: ""
+                          color: "",
+                          sizes: [],
+                          colors: [],
+                          additional_images: []
                         });
                         setActiveTab('inventory');
                       }}
@@ -575,16 +682,27 @@ export default function AdminPage() {
   const fetchShoes = async () => {
     if (!db) return;
     try {
-      const q = query(collection(db, "shoes"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const shoesData = querySnapshot.docs.map(doc => ({
+      console.log("Admin: Fetching from Firestore...");
+      const shoesRef = collection(db, "shoes");
+      const querySnapshot = await getDocs(shoesRef);
+      let shoesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as unknown as Shoe[];
+      
+      // Manual sort to avoid index requirements
+      shoesData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
       setShoes(shoesData);
       setLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error("Admin fetch error:", err);
+      // Even on error, stop loading
+      setLoading(false);
     }
   };
 

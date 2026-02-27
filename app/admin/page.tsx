@@ -8,9 +8,9 @@ import {
   Menu, ChevronRight, Trash2, Edit, LogOut, Lock, 
   LayoutGrid, List, PlusCircle, Settings, FileText, Newspaper
 } from "lucide-react";
-import { db, auth, googleProvider } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, signInWithPopup } from "firebase/auth";
+import { googleProvider, getClientAuth, getClientDb } from "@/lib/firebase";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, signInWithPopup, createUserWithEmailAndPassword } from "firebase/auth";
 import { Shoe } from "@/types";
 import { BlogPost } from "../HomeClient";
 import Image from "next/image";
@@ -104,18 +104,18 @@ const BlogPostForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db) { alert("Firebase not configured."); return; }
     setIsSubmitting(true);
     try {
+      const firestore = getClientDb();
       if (editingPost) {
-        await updateDoc(doc(db, "blog_posts", editingPost.id), {
+        await updateDoc(doc(firestore, "blog_posts", editingPost.id), {
           ...formData,
           updatedAt: new Date().toISOString(),
         });
         alert("Post updated!");
         onCancelEdit();
       } else {
-        await addDoc(collection(db, "blog_posts"), {
+        await addDoc(collection(firestore, "blog_posts"), {
           ...formData,
           createdAt: new Date().toISOString(),
         });
@@ -293,10 +293,10 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
   const [uploading, setUploading] = useState(false);
 
   const fetchBlogPosts = async () => {
-    if (!db) return;
     setBlogLoading(true);
     try {
-      const snap = await getDocs(collection(db, "blog_posts"));
+      const firestore = getClientDb();
+      const snap = await getDocs(collection(firestore, "blog_posts"));
       let data = snap.docs.map(d => ({ id: d.id, ...d.data() })) as BlogPost[];
       data.sort((a, b) => {
         const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -354,16 +354,16 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db) { alert("Firebase is not configured."); return; }
     if (!formData.image_url) { alert("Please upload an image first."); return; }
     setIsSubmitting(true);
     try {
+      const firestore = getClientDb();
       if (editingShoe) {
-        await updateDoc(doc(db, "shoes", editingShoe.id.toString()), { ...formData, price: parseFloat(formData.price), updatedAt: new Date().toISOString() });
+        await updateDoc(doc(firestore, "shoes", editingShoe.id.toString()), { ...formData, price: parseFloat(formData.price), updatedAt: new Date().toISOString() });
         alert("Sneaker updated successfully!");
         setEditingShoe(null);
       } else {
-        await addDoc(collection(db, "shoes"), { ...formData, price: parseFloat(formData.price), createdAt: new Date().toISOString() });
+        await addDoc(collection(firestore, "shoes"), { ...formData, price: parseFloat(formData.price), createdAt: new Date().toISOString() });
         alert("Sneaker added successfully!");
       }
       setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", description: "", image_url: "", color: "", sizes: [], colors: [], additional_images: [] });
@@ -375,17 +375,17 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
 
   const handleDelete = async (id: string | number) => {
     if (!confirm("Are you sure you want to delete this sneaker?")) return;
-    try { await deleteDoc(doc(db!, "shoes", id.toString())); alert("Sneaker deleted!"); onShoeAdded(); }
+    try { await deleteDoc(doc(getClientDb(), "shoes", id.toString())); alert("Sneaker deleted!"); onShoeAdded(); }
     catch { alert("Failed to delete sneaker."); }
   };
 
   const handleDeletePost = async (id: string) => {
     if (!confirm("Delete this blog post?")) return;
-    try { await deleteDoc(doc(db!, "blog_posts", id)); alert("Post deleted!"); fetchBlogPosts(); }
+    try { await deleteDoc(doc(getClientDb(), "blog_posts", id)); alert("Post deleted!"); fetchBlogPosts(); }
     catch { alert("Failed to delete post."); }
   };
 
-  const handleLogout = async () => { await signOut(auth); sessionStorage.removeItem("admin_verified"); };
+  const handleLogout = async () => { await signOut(getClientAuth()); sessionStorage.removeItem("admin_verified"); };
 
   const tabs = [
     { id: 'overview',  label: 'Overview',    icon: LayoutGrid },
@@ -671,12 +671,12 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
     if (pin !== "123456") { alert("Invalid Admin PIN."); return; }
     setLoading(true);
     try {
+      const firebaseAuth = getClientAuth();
       if (isSignUp) {
-        const { createUserWithEmailAndPassword } = await import("firebase/auth");
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(firebaseAuth, email, password);
         alert("Admin account created! You are now signed in.");
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(firebaseAuth, email, password);
       }
       onVerified();
     } catch (e: any) { alert(e.message); }
@@ -685,7 +685,11 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
 
   const handleGoogleLogin = async () => {
     if (pin !== "123456") { alert("Please enter the Admin PIN first."); return; }
-    try { await signInWithPopup(auth, googleProvider); onVerified(); }
+    try { 
+      const firebaseAuth = getClientAuth();
+      await signInWithPopup(firebaseAuth, googleProvider); 
+      onVerified(); 
+    }
     catch (e: any) { alert(e.message); }
   };
 
@@ -747,23 +751,25 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const firebaseAuth = getClientAuth();
+      unsubscribe = onAuthStateChanged(firebaseAuth, user => {
+        setUser(user);
+        const verified = sessionStorage.getItem("admin_verified") === "true";
+        setIsAdminVerified(verified);
+        setLoading(false);
+      });
+    } catch {
       setLoading(false);
-      return;
     }
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setUser(user);
-      const verified = sessionStorage.getItem("admin_verified") === "true";
-      setIsAdminVerified(verified);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    return () => unsubscribe?.();
   }, []);
 
   const fetchShoes = async () => {
-    if (!db) return;
     try {
-      const snap = await getDocs(collection(db, "shoes"));
+      const firestore = getClientDb();
+      const snap = await getDocs(collection(firestore, "shoes"));
       let data = snap.docs.map(d => ({ id: d.id, ...d.data() })) as unknown as Shoe[];
       data.sort((a, b) => {
         const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;

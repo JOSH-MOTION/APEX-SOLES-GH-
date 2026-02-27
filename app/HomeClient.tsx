@@ -4,11 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, X, Plus, Minus, ArrowRight, Search, Flame, Menu, ChevronRight, User as UserIcon, LogIn, LogOut, Zap } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { db, auth } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { getClientAuth, getClientDb, googleProvider } from "@/lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 import { onAuthStateChanged, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { Shoe, CartItem } from "@/types";
-import { googleProvider } from "@/lib/firebase";
 
 type Page = 'home' | 'drops' | 'culture' | 'archive' | 'men' | 'women' | 'contact';
 
@@ -128,7 +127,7 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage, user, onOpenAu
           </button>
           {user && (
             <button 
-              onClick={() => signOut(auth)}
+              onClick={() => signOut(getClientAuth())}
               className="p-2 text-gray-400 hover:text-red-600 transition-colors"
               title="Logout"
             >
@@ -165,7 +164,7 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage, user, onOpenAu
               {user && (
                 <button 
                   onClick={() => {
-                    signOut(auth);
+                    signOut(getClientAuth());
                     setIsMobileMenuOpen(false);
                   }}
                   className="text-sm font-bold tracking-widest text-left text-red-500"
@@ -576,20 +575,19 @@ const CulturePage = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       setLoading(true);
-      if (db) {
-        try {
-          const postsRef = collection(db, "blog_posts");
-          const snapshot = await getDocs(postsRef);
-          let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BlogPost[];
-          data.sort((a, b) => {
-            const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return db2 - da;
-          });
-          setPosts(data);
-        } catch (err) {
-          console.error("Error fetching blog posts:", err);
-        }
+      try {
+        const firestore = getClientDb();
+        const postsRef = collection(firestore, "blog_posts");
+        const snapshot = await getDocs(postsRef);
+        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BlogPost[];
+        data.sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db2 - da;
+        });
+        setPosts(data);
+      } catch (err) {
+        console.error("Error fetching blog posts:", err);
       }
       setLoading(false);
     };
@@ -912,10 +910,11 @@ const UserAuthModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
     e.preventDefault();
     setLoading(true);
     try {
+      const firebaseAuth = getClientAuth();
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(firebaseAuth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(firebaseAuth, email, password);
       }
       onClose();
     } catch (error: any) {
@@ -927,7 +926,7 @@ const UserAuthModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
 
   const handleGoogleAuth = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithPopup(getClientAuth(), googleProvider);
       onClose();
     } catch (error: any) {
       alert(error.message);
@@ -1044,39 +1043,39 @@ export default function HomeClient() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = onAuthStateChanged(getClientAuth(), (user) => {
+        setUser(user);
+      });
+    } catch {}
+    return () => unsubscribe?.();
   }, []);
 
   const fetchShoes = async () => {
     setLoading(true);
-    
-    if (db) {
-      try {
-        const shoesRef = collection(db, "shoes");
-        const querySnapshot = await getDocs(shoesRef);
-        let shoesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as unknown as Shoe[];
-        
-        shoesData.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        });
-        
-        if (shoesData.length > 0) {
-          setShoes(shoesData);
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        console.error("Firestore fetch error:", err);
+    try {
+      const firestore = getClientDb();
+      const shoesRef = collection(firestore, "shoes");
+      const querySnapshot = await getDocs(shoesRef);
+      let shoesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as unknown as Shoe[];
+      
+      shoesData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      if (shoesData.length > 0) {
+        setShoes(shoesData);
+        setLoading(false);
+        return;
       }
+    } catch (err) {
+      console.error("Firestore fetch error:", err);
     }
 
     try {

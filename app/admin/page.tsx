@@ -660,19 +660,26 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
 
 // ─── ADMIN LOGIN ───────────────────────────────────────────────────────────────
 const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pin !== "123456") { alert("Invalid Admin PIN."); return; }
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      if (isSignUp) {
+        const { createUserWithEmailAndPassword } = await import("firebase/auth");
+        await createUserWithEmailAndPassword(auth, email, password);
+        alert("Admin account created! You are now signed in.");
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
       onVerified();
-    } catch { alert("Invalid credentials."); }
+    } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
   };
 
@@ -687,10 +694,14 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-3xl border border-black/5 shadow-2xl">
         <div className="text-center">
           <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl"><Lock className="text-white" size={24} /></div>
-          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-black">Admin Access</h2>
-          <p className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sign in to manage Apex Soles.</p>
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-black">
+            {isSignUp ? "Create Admin" : "Admin Access"}
+          </h2>
+          <p className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            {isSignUp ? "Register a new admin account." : "Sign in to manage Apex Soles."}
+          </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Admin PIN (6 Digits)</label>
@@ -702,11 +713,11 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="appearance-none relative block w-full px-6 py-4 border border-black/5 bg-black/5 placeholder-gray-400 text-black rounded-2xl focus:outline-none focus:ring-2 ring-black/10 transition-all text-sm" placeholder="••••••••" />
+              <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} className="appearance-none relative block w-full px-6 py-4 border border-black/5 bg-black/5 placeholder-gray-400 text-black rounded-2xl focus:outline-none focus:ring-2 ring-black/10 transition-all text-sm" placeholder="••••••••" />
             </div>
           </div>
           <button type="submit" disabled={loading} className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-2xl text-white bg-black hover:bg-zinc-800 focus:outline-none transition-all shadow-xl disabled:opacity-50">
-            {loading ? <Zap className="animate-spin" size={16} /> : "Authorize Access"}
+            {loading ? <Zap className="animate-spin" size={16} /> : isSignUp ? "Create Account" : "Authorize Access"}
           </button>
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-black/5"></div></div>
@@ -714,9 +725,15 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
           </div>
           <button type="button" onClick={handleGoogleLogin} className="w-full bg-white border border-black/5 text-black py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 transition-all shadow-sm flex items-center justify-center gap-3">
             <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
-            Sign in with Google
+            {isSignUp ? "Sign up with Google" : "Sign in with Google"}
           </button>
         </form>
+        <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          {isSignUp ? "Already have an account?" : "Need an admin account?"}{" "}
+          <button onClick={() => setIsSignUp(!isSignUp)} className="text-black hover:underline">
+            {isSignUp ? "Sign In" : "Sign Up"}
+          </button>
+        </p>
       </div>
     </div>
   );

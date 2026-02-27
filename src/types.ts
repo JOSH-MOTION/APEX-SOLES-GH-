@@ -19,3 +19,16 @@ export interface CartItem extends Shoe {
   selectedSize: string;
   selectedColor: string;
 }
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  image: string;
+  excerpt: string;
+  content: string;
+  author: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -12,9 +12,20 @@ import { googleProvider } from "@/lib/firebase";
 
 type Page = 'home' | 'drops' | 'culture' | 'archive' | 'men' | 'women' | 'contact';
 
+export interface BlogPost {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  image: string;
+  excerpt: string;
+  content: string;
+  author: string;
+  createdAt?: string;
+}
+
 // --- Components ---
 
-// ✅ After
 const Logo = ({ className = "", variant = 'dark', height = 40 }: { 
   className?: string, 
   variant?: 'dark' | 'light', 
@@ -192,10 +203,7 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen flex items-center px-6 md:px-12 lg:px-24 overflow-hidden">
-      {/* Base Background */}
       <div className="absolute inset-0 bg-white z-0" />
-
-      {/* Background Image Layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
           <motion.div
@@ -212,17 +220,13 @@ const Hero = () => {
               className="w-full h-full object-cover contrast-100"
               referrerPolicy="no-referrer"
             />
-            {/* Subtle overlay to ensure text readability without washing out the image */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/30" />
           </motion.div>
         </AnimatePresence>
-        
-        {/* Overlays for depth */}
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent z-[1]" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white z-[1]" />
       </div>
 
-      {/* Decorative Text */}
       <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
         <motion.h2 
           key={activeImage}
@@ -237,7 +241,6 @@ const Hero = () => {
 
       <div className="relative z-10 w-full max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          {/* Left Content */}
           <div className="lg:col-span-7 space-y-10">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -362,7 +365,6 @@ const ProductDetail = ({ shoe, onClose, onAddToCart }: { shoe: Shoe, onClose: ()
           />
         </AnimatePresence>
 
-        {/* Thumbnail Gallery */}
         {allImages.length > 1 && (
           <div className="flex gap-4 mt-12 overflow-x-auto pb-4 max-w-full px-4">
             {allImages.map((img, i) => (
@@ -420,7 +422,6 @@ const ProductDetail = ({ shoe, onClose, onAddToCart }: { shoe: Shoe, onClose: ()
           transition={{ delay: 0.4 }}
           className="space-y-8"
         >
-          {/* Color Selection */}
           <div className="space-y-3">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Color</p>
             <div className="flex flex-wrap gap-3">
@@ -436,7 +437,6 @@ const ProductDetail = ({ shoe, onClose, onAddToCart }: { shoe: Shoe, onClose: ()
             </div>
           </div>
 
-          {/* Size Selection */}
           <div className="space-y-3">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Size</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -520,6 +520,172 @@ const ProductCard = ({ shoe, onAddToCart, onClick }: { shoe: Shoe, onAddToCart: 
   </div>
 );
 
+// --- Blog Post Modal ---
+const BlogPostModal = ({ post, onClose }: { post: BlogPost, onClose: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[100] bg-white overflow-y-auto"
+  >
+    <button
+      onClick={onClose}
+      className="fixed top-6 right-6 z-[110] p-3 bg-black/5 rounded-full text-black hover:bg-black hover:text-white transition-all"
+    >
+      <X size={24} />
+    </button>
+
+    <div className="max-w-3xl mx-auto px-6 py-24">
+      <div className="flex items-center gap-3 mb-6">
+        <span className="text-[10px] font-black text-black uppercase tracking-widest bg-black/5 px-2 py-1 rounded">
+          {post.category}
+        </span>
+        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{post.date}</span>
+        {post.author && (
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">By {post.author}</span>
+        )}
+      </div>
+
+      <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-black leading-tight mb-8">
+        {post.title}
+      </h1>
+
+      {post.image && (
+        <div className="aspect-video rounded-2xl overflow-hidden border border-black/5 mb-10">
+          <img src={post.image} className="w-full h-full object-cover" alt={post.title} referrerPolicy="no-referrer" />
+        </div>
+      )}
+
+      <div className="prose prose-lg max-w-none">
+        {post.content ? (
+          <div className="text-gray-600 leading-relaxed text-lg whitespace-pre-wrap">{post.content}</div>
+        ) : (
+          <p className="text-gray-600 leading-relaxed text-lg">{post.excerpt}</p>
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
+
+// --- Dynamic Culture Page ---
+const CulturePage = () => {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      if (db) {
+        try {
+          const postsRef = collection(db, "blog_posts");
+          const snapshot = await getDocs(postsRef);
+          let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BlogPost[];
+          data.sort((a, b) => {
+            const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return db2 - da;
+          });
+          setPosts(data);
+        } catch (err) {
+          console.error("Error fetching blog posts:", err);
+        }
+      }
+      setLoading(false);
+    };
+    fetchPosts();
+  }, []);
+
+  return (
+    <>
+      <section className="py-20 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+          <div>
+            <h2 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-black leading-none">Culture</h2>
+            <p className="text-gray-400 uppercase text-[10px] font-bold tracking-[0.3em] mt-4">Stories, News & Community Updates</p>
+          </div>
+          <div className="hidden md:block h-px flex-1 bg-black/5 mx-12 mb-4" />
+          <div className="text-right">
+            <p className="text-[10px] font-black text-black uppercase tracking-widest">Issue No. 04</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Spring 2026</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-24">
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-24">
+            <p className="text-gray-300 font-black italic uppercase text-3xl tracking-tighter">No posts yet.</p>
+            <p className="text-gray-400 text-sm mt-2 uppercase tracking-widest">Check back soon for stories & news.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {posts.map((article, i) => (
+              <motion.div 
+                key={article.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="group cursor-pointer space-y-6"
+                onClick={() => setSelectedPost(article)}
+              >
+                <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-black/5 relative">
+                  <img 
+                    src={article.image || "https://images.unsplash.com/photo-1523398002811-999ca8dec234?q=80&w=800&auto=format&fit=crop"} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                    referrerPolicy="no-referrer"
+                    alt={article.title}
+                  />
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-black uppercase tracking-widest bg-black/5 px-2 py-1 rounded">{article.category}</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{article.date}</span>
+                  </div>
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter text-black group-hover:text-gray-600 transition-colors leading-tight">
+                    {article.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
+                    {article.excerpt}
+                  </p>
+                  <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black group-hover:gap-3 transition-all">
+                    Read More <ArrowRight size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-32 p-12 bg-[#f8f8f8] rounded-3xl border border-black/5 flex flex-col md:flex-row items-center justify-between gap-12">
+          <div className="max-w-md space-y-4">
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-black">Join the Community</h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Be the first to know about exclusive events, pop-up shops, and community meetups in Accra.
+            </p>
+          </div>
+          <div className="flex w-full md:w-auto gap-2">
+            <input 
+              type="email" 
+              placeholder="Email Address" 
+              className="flex-1 md:w-64 bg-white border border-black/5 rounded-md px-6 py-4 text-sm focus:outline-none focus:ring-1 ring-black/20 text-black"
+            />
+            <button className="bg-black text-white px-10 py-4 rounded-md font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-colors">Subscribe</button>
+          </div>
+        </div>
+      </section>
+
+      <AnimatePresence>
+        {selectedPost && (
+          <BlogPostModal post={selectedPost} onClose={() => setSelectedPost(null)} />
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
 
 const DropsPage = () => (
   <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -553,102 +719,6 @@ const DropsPage = () => (
     </div>
   </section>
 );
-
-const CulturePage = () => {
-  const articles = [
-    {
-      title: "How Accra became the sneaker capital of West Africa",
-      category: "Editorial",
-      date: "Feb 24, 2026",
-      image: "https://images.unsplash.com/photo-1523398002811-999ca8dec234?q=80&w=800&auto=format&fit=crop",
-      excerpt: "From the bustling markets of Makola to the high-end boutiques of Osu, sneaker culture is taking over the city."
-    },
-    {
-      title: "The Rise of Local Customizers in Ghana",
-      category: "Community",
-      date: "Feb 20, 2026",
-      image: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?q=80&w=800&auto=format&fit=crop",
-      excerpt: "Meet the artists who are turning standard kicks into one-of-a-kind masterpieces."
-    },
-    {
-      title: "Upcoming Drop: Apex 'Phoenix' Limited Edition",
-      category: "News",
-      date: "Feb 15, 2026",
-      image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=800&auto=format&fit=crop",
-      excerpt: "Everything you need to know about the most anticipated release of the year."
-    }
-  ];
-
-  return (
-    <section className="py-20 px-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-        <div>
-          <h2 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-black leading-none">Culture</h2>
-          <p className="text-gray-400 uppercase text-[10px] font-bold tracking-[0.3em] mt-4">Stories, News & Community Updates</p>
-        </div>
-        <div className="hidden md:block h-px flex-1 bg-black/5 mx-12 mb-4" />
-        <div className="text-right">
-          <p className="text-[10px] font-black text-black uppercase tracking-widest">Issue No. 04</p>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Spring 2026</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-        {articles.map((article, i) => (
-          <motion.div 
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="group cursor-pointer space-y-6"
-          >
-            <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-black/5 relative">
-              <img 
-                src={article.image} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                referrerPolicy="no-referrer"
-                alt={article.title}
-              />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-black uppercase tracking-widest bg-black/5 px-2 py-1 rounded">{article.category}</span>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{article.date}</span>
-              </div>
-              <h3 className="text-2xl font-black italic uppercase tracking-tighter text-black group-hover:text-gray-600 transition-colors leading-tight">
-                {article.title}
-              </h3>
-              <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
-                {article.excerpt}
-              </p>
-              <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black group-hover:gap-3 transition-all">
-                Read More <ArrowRight size={14} />
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-32 p-12 bg-[#f8f8f8] rounded-3xl border border-black/5 flex flex-col md:flex-row items-center justify-between gap-12">
-        <div className="max-w-md space-y-4">
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter text-black">Join the Community</h2>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            Be the first to know about exclusive events, pop-up shops, and community meetups in Accra.
-          </p>
-        </div>
-        <div className="flex w-full md:w-auto gap-2">
-          <input 
-            type="email" 
-            placeholder="Email Address" 
-            className="flex-1 md:w-64 bg-white border border-black/5 rounded-md px-6 py-4 text-sm focus:outline-none focus:ring-1 ring-black/20 text-black"
-          />
-          <button className="bg-black text-white px-10 py-4 rounded-md font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-colors">Subscribe</button>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const ArchivePage = () => (
   <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -832,8 +902,6 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
   );
 };
 
-// --- Main App ---
-
 const UserAuthModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -986,44 +1054,35 @@ export default function HomeClient() {
   const fetchShoes = async () => {
     setLoading(true);
     
-    // 1. Try Firestore if available
     if (db) {
       try {
-        console.log("Fetching from Firestore...");
         const shoesRef = collection(db, "shoes");
-        // We use a simple query first to avoid index requirements if createdAt isn't indexed yet
         const querySnapshot = await getDocs(shoesRef);
         let shoesData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as unknown as Shoe[];
         
+        shoesData.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
+        
         if (shoesData.length > 0) {
-          // Sort manually in memory to avoid index requirement errors
-          shoesData.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-          });
-          
-          console.log(`Found ${shoesData.length} shoes in Firestore`);
           setShoes(shoesData);
           setLoading(false);
           return;
         }
-        console.log("Firestore is empty, falling back...");
       } catch (err) {
         console.error("Firestore fetch error:", err);
       }
     }
 
-    // 2. Fallback to Local API
     try {
-      console.log("Fetching from Local API...");
       const res = await fetch("/api/shoes");
       if (!res.ok) throw new Error("API fetch failed");
       const data = await res.json();
-      console.log(`Found ${data.length} shoes in Local API`);
       setShoes(data);
     } catch (err) {
       console.error("Local API fetch error:", err);

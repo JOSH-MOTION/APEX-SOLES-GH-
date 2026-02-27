@@ -747,10 +747,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, user => {
       setUser(user);
       const verified = sessionStorage.getItem("admin_verified") === "true";
       setIsAdminVerified(verified);
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);

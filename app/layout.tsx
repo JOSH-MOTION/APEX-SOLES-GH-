@@ -1,54 +1,105 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-
-
 export const metadata: Metadata = {
-  title: "APEX SOLES GH | Exclusive Sneakers in Ghana",
+  metadataBase: new URL("https://www.apexsolesgh.com"),
+  title: {
+    default: "APEX SOLES GH | Premium Sneakers in Ghana",
+    template: "%s | APEX SOLES GH",
+  },
   description:
-    "Shop authentic and exclusive sneakers in Ghana. Apex Soles GH brings you the latest Nike, Jordan, Yeezy, and streetwear culture.",
+    "Shop authentic and exclusive sneakers in Ghana. Apex Soles GH brings you the latest Nike, Jordan, Yeezy, New Balance and streetwear culture in Accra. Fast delivery across all regions.",
   keywords: [
     "sneakers ghana",
     "buy sneakers ghana",
     "apex soles gh",
+    "apex soles ghana",
     "nike ghana",
-    "jordans ghana",
+    "jordan shoes ghana",
     "yeezy ghana",
+    "new balance ghana",
     "streetwear ghana",
     "sneaker store accra",
+    "buy shoes accra",
+    "sneakers accra ghana",
+    "exclusive sneakers ghana",
+    "limited sneakers ghana",
+    "shoe store ghana",
+    "kicks ghana",
+    "fresh sneakers accra",
+    "designer shoes ghana",
   ],
+  authors: [{ name: "Apex Soles GH", url: "https://www.apexsolesgh.com" }],
+  creator: "Apex Soles GH",
+  publisher: "Apex Soles GH",
+  category: "Shopping",
+  applicationName: "Apex Soles GH",
+  
+  // Canonical URL
+  alternates: {
+    canonical: "https://www.apexsolesgh.com",
+  },
 
+  // Open Graph
+  openGraph: {
+    title: "APEX SOLES GH | Premium Sneakers in Ghana",
+    description:
+      "Discover authentic sneakers and streetwear in Ghana. Shop the latest drops at Apex Soles GH — Accra's most exclusive sneaker destination.",
+    url: "https://www.apexsolesgh.com",
+    siteName: "Apex Soles GH",
+    images: [
+      {
+        url: "https://www.apexsolesgh.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Apex Soles GH - Premium Sneakers in Ghana",
+      },
+    ],
+    locale: "en_GH",
+    type: "website",
+  },
+
+  // Twitter / X
+  twitter: {
+    card: "summary_large_image",
+    title: "APEX SOLES GH | Premium Sneakers in Ghana",
+    description:
+      "Accra's most exclusive sneaker destination. Shop Nike, Jordan, Yeezy & more. Delivery across Ghana.",
+    images: ["https://www.apexsolesgh.com/og-image.jpg"],
+    site: "@apexsolesgh",
+    creator: "@apexsolesgh",
+  },
+
+  // Robots
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+
+  // Icons
   icons: {
     icon: "/Black.png",
     shortcut: "/Black.png",
     apple: "/Black.png",
+    other: {
+      rel: "apple-touch-icon-precomposed",
+      url: "/Black.png",
+    },
   },
-  
-  openGraph: {
-    title: "APEX SOLES GH | Exclusive Sneakers in Ghana",
-    description:
-      "Discover authentic sneakers and streetwear in Ghana. Shop the latest drops at Apex Soles GH.",
-    url: "https://apex-soles-gh-6rvl.vercel.app",
-    siteName: "Apex Soles GH",
-    images: [
-      {
-        url: "https://apex-soles-gh-6rvl.vercel.app/Black.png", 
-        width: 1200,
-        height: 630,
-        alt: "Apex Soles GH Sneakers",
-      },
-    ],
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Apex Soles GH | Exclusive Sneakers",
-    description:
-      "Premium sneakers and streetwear available in Ghana.",
-    images: ["https://apex-soles-gh-6rvl.vercel.app/Black.png"],
+
+  // Verification (add your codes after verifying)
+  verification: {
+    google: "ADD_YOUR_GOOGLE_SEARCH_CONSOLE_CODE_HERE",
+    // yandex: "your-yandex-code",
   },
 };
-
 
 export default function RootLayout({
   children,
@@ -57,6 +108,55 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Local Business Schema - helps Google show rich results */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "ClothingStore",
+              name: "Apex Soles GH",
+              description:
+                "Premium and exclusive sneaker store in Accra, Ghana. Shop Nike, Jordan, Yeezy, New Balance and more.",
+              url: "https://www.apexsolesgh.com",
+              logo: "https://www.apexsolesgh.com/Black.png",
+              image: "https://www.apexsolesgh.com/og-image.jpg",
+              telephone: "+233549920071",
+              email: "Apexsoles1@gmail.com",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "Osu",
+                addressLocality: "Accra",
+                addressCountry: "GH",
+              },
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: 5.5502,
+                longitude: -0.1962,
+              },
+              openingHoursSpecification: {
+                "@type": "OpeningHoursSpecification",
+                dayOfWeek: [
+                  "Monday","Tuesday","Wednesday",
+                  "Thursday","Friday","Saturday","Sunday",
+                ],
+                opens: "09:00",
+                closes: "21:00",
+              },
+              sameAs: [
+                "https://www.instagram.com/apexsoles.gh",
+                "https://www.tiktok.com/@apexsolesgh",
+                "https://snapchat.com/t/lF9kjWNu",
+              ],
+              priceRange: "GH₵₵₵",
+              currenciesAccepted: "GHS",
+              paymentAccepted: "Mobile Money, Cash",
+              areaServed: "Ghana",
+            }),
+          }}
+        />
+      </head>
       <body className="antialiased" suppressHydrationWarning>
         {children}
       </body>

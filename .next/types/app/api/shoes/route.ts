@@ -1,4 +1,4 @@
-// File: /Users/codetrain/Desktop/APEX-SOLES-GH--1/app/api/shoes/route.ts
+// File: /Users/codetrain/Desktop/APEX-SOLES-GH-/app/api/shoes/route.ts
 import * as entry from '../../../../../app/api/shoes/route.js'
 import type { NextRequest } from 'next/server.js'
 

@@ -181,125 +181,155 @@ const Navbar = ({ cartCount, onOpenCart, onNavigate, currentPage, user, onOpenAu
 };
 
 const Hero = () => {
-  const thumbnails = [
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=1600&auto=format&fit=crop",
+  const slides = [
+    {
+      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1600&auto=format&fit=crop",
+      title: "ELEVATE",
+      subtitle: "YOUR SOLE",
+      description: "Accra's most exclusive sneaker destination",
+      cta: "SHOP NOW"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1600&auto=format&fit=crop",
+      title: "PREMIUM",
+      subtitle: "SELECTION 2026",
+      description: "Limited edition drops and exclusive grails",
+      cta: "EXPLORE"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=1600&auto=format&fit=crop",
+      title: "EXCLUSIVE",
+      subtitle: "COLLECTION",
+      description: "We source the grails, you wear the heat",
+      cta: "DISCOVER"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?q=80&w=1600&auto=format&fit=crop",
+      title: "LATEST",
+      subtitle: "DROPS",
+      description: "Fresh arrivals hitting the streets of Accra",
+      cta: "SHOP LATEST"
+    }
   ];
-  const [activeImage, setActiveImage] = useState(thumbnails[0]);
+
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveImage(prev => {
-        const currentIndex = thumbnails.indexOf(prev);
-        const nextIndex = (currentIndex + 1) % thumbnails.length;
-        return thumbnails[nextIndex];
-      });
-    }, 6000);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [thumbnails]);
+  }, [slides.length]);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
   return (
-    <section className="relative min-h-screen flex items-center px-6 md:px-12 lg:px-24 overflow-hidden">
-      <div className="absolute inset-0 bg-white z-0" />
-      <div className="absolute inset-0 z-0">
-        <AnimatePresence mode="wait">
+    <section className="relative h-screen overflow-hidden">
+      <div className="absolute inset-0">
+        {slides.map((slide, index) => (
           <motion.div
-            key={activeImage}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            key={index}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentSlide ? 1 : 0,
+              scale: index === currentSlide ? 1 : 1.05
+            }}
+            transition={{ 
+              duration: 0.8, 
+              ease: [0.4, 0, 0.2, 1] 
+            }}
             className="absolute inset-0"
           >
             <img 
-              src={activeImage} 
-              alt="Background Sneaker" 
-              className="w-full h-full object-cover contrast-100"
+              src={slide.image} 
+              alt={`Slide ${index + 1}`} 
+              className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/30" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
           </motion.div>
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/20 to-transparent z-[1]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white z-[1]" />
+        ))}
       </div>
 
-      <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
-        <motion.h2 
-          key={activeImage}
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 0.05, y: 0 }}
-          transition={{ duration: 1 }}
-          className="text-[30vw] font-black text-black uppercase tracking-tighter select-none whitespace-nowrap"
-        >
-          APEX SOLES
-        </motion.h2>
-      </div>
-
-      <div className="relative z-10 w-full max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-7 space-y-10">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-3 px-4 py-1.5 bg-black/5 border border-black/10 rounded-full"
-            >
-              <span className="w-2 h-2 rounded-full bg-black animate-pulse" />
-              <span className="text-black text-[10px] font-black tracking-[0.3em] uppercase">PREMIUM SELECTION 2026</span>
-            </motion.div>
+      <div className="relative z-10 h-full flex items-center justify-center">
+        <div className="text-center text-white px-6 max-w-4xl mx-auto">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="space-y-6"
+          >
+            <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span className="text-white text-[10px] font-black tracking-[0.3em] uppercase">PREMIUM SELECTION 2026</span>
+            </div>
             
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-4"
-            >
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-black leading-[0.8] uppercase italic tracking-tighter">
-                ELEVATE <br />
-                <span className="text-gray-300">YOUR</span> <br />
-                SOLE
+            <div className="space-y-2">
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-[0.8] uppercase italic tracking-tighter">
+                {slides[currentSlide].title}
               </h1>
-              <p className="text-gray-500 text-sm md:text-lg max-w-lg leading-relaxed font-medium uppercase tracking-wide">
-                Accra's most exclusive sneaker destination. <br />
-                We source the grails, you wear the heat.
-              </p>
-            </motion.div>
+              <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white/80 leading-[0.8] uppercase italic tracking-tighter">
+                {slides[currentSlide].subtitle}
+              </h2>
+            </div>
+            
+            <p className="text-white/90 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium uppercase tracking-wide">
+              {slides[currentSlide].description}
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="flex flex-wrap items-center gap-8"
+            <motion.button 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              onClick={() => {
+                const el = document.getElementById('collection');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="bg-white text-black px-12 py-5 rounded-md font-black text-xs tracking-widest uppercase hover:bg-gray-100 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.3)] group inline-flex items-center gap-3"
             >
-              <button 
-                onClick={() => {
-                  const el = document.getElementById('collection');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="bg-black text-white px-12 py-5 rounded-md font-black text-xs tracking-widest uppercase hover:bg-zinc-800 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.1)] group flex items-center gap-3"
-              >
-                SHOP NOW <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-              
-              <div className="flex flex-col gap-3">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">SWITCH STYLE:</span>
-                <div className="flex gap-3">
-                  {thumbnails.map((thumb, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveImage(thumb)}
-                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all ${activeImage === thumb ? 'border-black scale-110 shadow-lg' : 'border-black/5 hover:border-black/20'}`}
-                    >
-                      <img src={thumb} className="w-full h-full object-cover" alt="" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </div>
+              {slides[currentSlide].cta} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </motion.div>
         </div>
+      </div>
+
+      <button
+        onClick={prevSlide}
+        className="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
+      >
+        <ChevronRight size={20} className="rotate-180" />
+      </button>
+
+      <button
+        onClick={nextSlide}
+        className="absolute right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
+      >
+        <ChevronRight size={20} />
+      </button>
+
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`w-3 h-3 rounded-full transition-all ${
+              currentSlide === index 
+                ? 'bg-white w-12' 
+                : 'bg-white/50 hover:bg-white/70'
+            }`}
+          />
+        ))}
       </div>
     </section>
   );
@@ -813,6 +843,211 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
   onUpdateQuantity: (id: string | number, size: string, color: string, delta: number) => void
 }) => {
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [customAddress, setCustomAddress] = useState("");
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+  const getCurrentLocation = () => {
+    setIsLoadingLocation(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // For demo purposes, we'll set Greater Accra as default
+          // In a real app, you'd use reverse geocoding API
+          setSelectedLocation("Greater Accra Region");
+          setCustomAddress("Current location detected");
+          setIsLoadingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          // Fallback to Greater Accra
+          setSelectedLocation("Greater Accra Region");
+          setIsLoadingLocation(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser");
+      setIsLoadingLocation(false);
+    }
+  };
+
+  const ghanaLocations: readonly string[] = [
+    "Greater Accra Region",
+    "Ashanti Region", 
+    "Western Region",
+    "Eastern Region",
+    "Central Region",
+    "Northern Region",
+    "Upper East Region",
+    "Upper West Region",
+    "Volta Region",
+    "Bono Region",
+    "Bono East Region",
+    "Ahafo Region",
+    "North East Region",
+    "Savannah Region",
+    "Oti Region",
+    "Western North Region"
+  ] as const;
+
+  const majorCities: Record<string, string[]> = {
+    "Greater Accra Region": [
+      "Accra Central", "Tema", "Ashaiman", "Madina", "Teshie", "Labone", "Osu", 
+      "Spintex", "Aburi", "Dawhenya", "Adenta", "Dansoman", "Kaneshie", 
+      "Abossey Okai", "Mallam", "Weija", "Tema Community 1", "Tema Community 2", 
+      "Tema Community 3", "Tema Community 4", "Tema Community 5", "Tema Community 6", 
+      "Tema Community 7", "Tema Community 8", "Tema Community 9", "Tema Community 10", 
+      "Tema Community 11", "Tema Community 12", "Tema Community 13", "Tema Community 14", 
+      "Tema Community 15", "Tema Community 16", "Tema Community 17", "Tema Community 18", 
+      "Tema Community 19", "Tema Community 20", "Tema Community 21", "Tema Community 22", 
+      "Tema Community 23", "Tema Community 24", "Tema Community 25", "Tema Community 26", 
+      "Tema Community 27", "Prampram", "Nungua", "Teshie-Nungua", "Bortianor", 
+      "Pokuase", "Amasaman", "Kasoa", "Oblogo", "Afienya", "Oyibi", "Ashongman"
+    ],
+    "Ashanti Region": [
+      "Kumasi", "Obuasi", "Mampong", "Ejisu", "Bekwai", "Konongo", "Offinso",
+      "Tafo", "Efiduase", "Asokore-Mampong", "Agona", "Bompata", "Juaben", 
+      "Mankranso", "Afrancho", "Kwadaso", "Santasi", "Adum", "Asawasi", 
+      "Aboabo", "Kumasi Airport", "Ahwiaa", "Kenyasi", "Ntonso", "Fomena", 
+      "Barekese", "Ejisu-Juaben", "Bekwai", "Jacobu", "Nsuta", "Manso Nkwanta", 
+      "Adansi Fomena", "Obogu", "Akrofuom", "Dominase", "Wiamoase", "Asankarengwa"
+    ],
+    "Western Region": [
+      "Sekondi-Takoradi", "Tarkwa", "Prestea", "Elubo", "Axim", "Shama",
+      "Sefwi Wiawso", "Sefwi Bekwai", "Sefwi Juaboso", "Bogoso", "Wassa Akropong",
+      "Wassa Dunkwa", "Prestea Huni Valley", "Huni Valley", "Aboso", "Banso", "Inchaban",
+      "Mpohor", "Shama Junction", "Takoradi Market Circle", "Kojokrom", "Aiyinasi",
+      "Nkroful", "Sefwi Ankwaso", "Sefwi Debiso", "Jukwa", "Manso Amenfi"
+    ],
+    "Eastern Region": [
+      "Koforidua", "Nsawam", "Suhum", "Akim Oda", "Begoro", "Aburi",
+      "Kibi", "Tafo", "Mamfe", "Nkawkaw", "Asamankese", "Oda", "Kade",
+      "Akyem Oda", "Kibi", "New Tafo", "Suhum", "Kibi", "Mampong", "Akim Swedru",
+      "Asamankese", "Nkawkaw", "Ofoase", "Begoro", "Kwahu", "Mpraeso", "Abetifi",
+      "Nkwatia", "Asesewa", "Oda", "Kade", "Amanokrom", "Bunso", "Konongo"
+    ],
+    "Central Region": [
+      "Cape Coast", "Elmina", "Mankessim", "Winneba", "Kasoa", "Saltpond",
+      "Agona Swedru", "Agona Nkwanta", "Mankessim", "Apam", "Mumford", "Moree",
+      "Gomoa Fetteh", "Gomoa Assin", "Assin Fosu", "Assin Manso", "Assin Akropong",
+      "Dunkwa-on-Offin", "Twifo Praso", "Breman Asikuma", "Jukwa", "Mankoadze",
+      "Yamoransa", "Potsin", "Anomabo", "Abura", "Komenda", "Elubo"
+    ],
+    "Northern Region": [
+      "Tamale", "Yendi", "Savelugu", "Bimbilla", "Gushiegu", "Karaga",
+      "Sagnarigu", "Tolon", "Kumbungu", "Salaga", "Buipe", "Walewale",
+      "Nalerigu", "Gambaga", "Wulugu", "Yendi", "Bimbilla", "Savelugu", "Karaga",
+      "Tolon", "Kumbungu", "Sagnerigu", "Gushiegu", "Zabzugu", "Tatale",
+      "Saboba", "Chereponi", "Kpandai", "Mion", "Nanton"
+    ],
+    "Upper East Region": [
+      "Bolgatanga", "Navrongo", "Bawku", "Sandema", "Zebilla",
+      "Bongo", "Tongo", "Paga", "Navrongo", "Bolgatanga", "Bawku", "Sandema",
+      "Zebilla", "Bawku West", "Bawku East", "Bongo", "Tongo", "Paga", "Kandiga",
+      "Walewale", "Garu", "Tempane", "Zuarungu", "Mognori", "Kulungugu", "Kajelo"
+    ],
+    "Upper West Region": [
+      "Wa", "Tumu", "Jirapa", "Lawra", "Nandom",
+      "Lambussie", "Kaleo", "Funsi", "Gwollu", "Sissala", "Tumu",
+      "Jirapa", "Lawra", "Nandom", "Wechiau", "Han", "Gwollu", "Kaleo",
+      "Lambussie", "Funsi", "Daffiama Bussie", "Issa", "Kong", "Sakai"
+    ],
+    "Volta Region": [
+      "Ho", "Hohoe", "Keta", "Anloga", "Sogakope", "Kpando",
+      "Denu", "Aflao", "Dzodze", "Keta", "Anlo", "Tegbi", "Woe", "Anyako",
+      "Adaklu", "Kpando", "Jasikan", "Kadjebi", "Nkwanta", "Dambai", "Kete Krachi",
+      "Kpasa", "Torkor", "Battor", "Mepe", "Avedzi", "Adidome", "Tsito", "Vume",
+      "Sogakofe", "Tanyigbe", "New Ayoma", "Weta", "Akatsi", "Dzemeni", "Dekpor"
+    ],
+    "Bono Region": [
+      "Sunyani", "Techiman", "Berekum", "Dormaa Ahenkro", "Nkoranza",
+      "Mim", "Atebubu", "Wenchi", "Sampa", "Banda", "Seikwa", "Kintampo",
+      "Nkoranza", "Prang", "Yamfo", "Bamboi", "Fiaso", "Ameyaw", "Kwame Danso",
+      "Akumadan", "Kenyasi", "Manso", "Nsuatre", "Badu", "Subin", "Bechem"
+    ],
+    "Bono East Region": [
+      "Techiman", "Kintampo", "Nkoranza", "Atebubu", "Tuobodom",
+      "Forifori", "Fawoman", "Wamfie", "Kwame Danso", "Amantin", "Kumawu",
+      "Abransie", "Konkoma", "Afrancho", "Kwadwuma", "Bomaa", "Nsuta", "Prang",
+      "Yamfo", "Bamboi", "Fiaso", "Akumadan", "Kenyasi", "Manso", "Nsuatre"
+    ],
+    "Ahafo Region": [
+      "Goaso", "Mim", "Kenyasi", "Hwidiem", "Bechem",
+      "Sankore", "Subin", "Kukuom", "Tepa", "Mim", "Ahafo Kenyasi",
+      "Goaso", "Hwidiem", "Wamfie", "Kwaku", "Manso", "Ntotroso", "Akrodie",
+      "Betom", "Dadieso", "Kenyasi", "Mim", "Sankore", "Subin", "Tepa"
+    ],
+    "North East Region": [
+      "Nalerigu", "Walewale", "Bunkpurugu", "Gambaga", "Yunyoo",
+      "Bawku", "Bolgatanga", "Navrongo", "Sandema", "Zebilla", "Bongo",
+      "Tongo", "Paga", "Garu", "Tempane", "Zuarungu", "Mognori", "Kulungugu",
+      "Kajelo", "Walewale", "Nalerigu", "Gambaga", "Yunyoo", "Bunkpurugu", "Nasuan"
+    ],
+    "Savannah Region": [
+      "Damongo", "Buipe", "Salaga", "Bole", "Mankarigu",
+      "Bui", "Yapei", "Buipe", "Mpaha", "Kpandai", "Salaga", "Buipe",
+      "Damongo", "Bole", "Mankarigu", "Saru", "Yapei", "Banda", "Kusawgu",
+      "Tuna", "Yagaba", "Gbenfu", "Janga", "Gbanjong", "Kparibeyiri", "Gbanjong"
+    ],
+    "Oti Region": [
+      "Dambai", "Jasikan", "Kete Krachi", "Nkwanta", "Kadjebi",
+      "Nkwanta", "Kete Krachi", "Dambai", "Jasikan", "Kadjebi", "Nkwanta South",
+      "Nkwanta North", "Krachi East", "Krachi West", "Dambai", "Jasikan", "Kadjebi",
+      "Guaman", "Kete Krachi", "Nkwanta", "Brewaniase", "Kpassa", "Oti Damanko"
+    ],
+    "Western North Region": [
+      "Sefwi Wiawso", "Bibiani", "Sefwi Bekwai", "Asawinso", "Juaboso",
+      "Sefwi Anhwiaso", "Sefwi Akontombra", "Sefwi Asawinso", "Sefwi Bekwai",
+      "Sefwi Wiawso", "Bibiani", "Awaso", "Sefwi Anhwiaso", "Sefwi Akontombra",
+      "Sefwi Juabeso", "Sefwi Sui", "Sefwi Dumasua", "Sefwi Debiso", "Sefwi Bodi"
+    ]
+  };
+
+  const handleCheckout = () => {
+    if (items.length === 0) return;
+    
+    if (!selectedLocation) {
+      alert("Please select your location before checkout");
+      return;
+    }
+    
+    let message = "🛒 *NEW ORDER - APEX SOLES*\n\n";
+    message += "*ORDER DETAILS:*\n";
+    message += "━━━━━━━━━━━━━━━\n\n";
+    
+    items.forEach((item, index) => {
+      message += `*Item ${index + 1}:*\n`;
+      message += `📦 *Product ID:* ${item.id}\n`;
+      message += `👟 *Name:* ${item.name}\n`;
+      message += `🎨 *Color:* ${item.selectedColor}\n`;
+      message += `📏 *Size:* ${item.selectedSize}\n`;
+      message += `🔢 *Quantity:* ${item.quantity}\n`;
+      message += `💰 *Price:* GH₵ ${item.price.toLocaleString()}\n`;
+      message += `💵 *Subtotal:* GH₵ ${(item.price * item.quantity).toLocaleString()}\n`;
+      message += "━━━━━━━━━━━━━━━\n\n";
+    });
+    
+    message += `*TOTAL AMOUNT:* GH₵ ${total.toLocaleString()}\n\n`;
+    message += "*DELIVERY INFORMATION:*\n";
+    message += `📍 *Region:* ${selectedLocation}\n`;
+    if (customAddress) {
+      message += `🏠 *Detailed Address:* ${customAddress}\n`;
+    }
+    message += "📞 Please provide your phone number\n\n";
+    message += "*QUESTION:* How much is the delivery fee to " + selectedLocation + (customAddress ? ` (${customAddress})` : "") + "?\n\n";
+    message += "*Thank you for shopping with APEX SOLES!* 🚀";
+    
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/233549920071?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank');
+    onClose();
+  };
 
   return (
     <>
@@ -880,16 +1115,84 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
                 )}
               </div>
 
-              <div className="p-6 border-t border-black/5 bg-[#f8f8f8]">
+              <div className="p-6 border-t border-black/5 bg-[#f8f8f8] space-y-6">
                 <div className="flex justify-between mb-6">
                   <span className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Subtotal</span>
                   <span className="text-2xl font-black italic uppercase tracking-tighter text-black">GH₵ {total.toLocaleString()}</span>
                 </div>
+                
+                {items.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Region *</label>
+                      <button
+                        onClick={getCurrentLocation}
+                        disabled={isLoadingLocation}
+                        className="text-[10px] font-black text-black bg-black/5 border border-black/10 px-3 py-1.5 rounded-lg hover:bg-black/10 transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isLoadingLocation ? (
+                          <>
+                            <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin" />
+                            Detecting...
+                          </>
+                        ) : (
+                          <>
+                            <Search size={12} />
+                            Use My Location
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <select 
+                        value={selectedLocation}
+                        onChange={(e) => {
+                          setSelectedLocation(e.target.value);
+                          setCustomAddress("");
+                        }}
+                        className="w-full bg-white border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 ring-black/10"
+                      >
+                        <option value="">Choose your region...</option>
+                        {ghanaLocations.map(location => (
+                          <option key={location} value={location}>{location}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedLocation && majorCities[selectedLocation] && (
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select City/Area (Optional)</label>
+                        <select 
+                          value={customAddress}
+                          onChange={(e) => setCustomAddress(e.target.value)}
+                          className="w-full bg-white border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 ring-black/10"
+                        >
+                          <option value="">Choose city/area...</option>
+                          {majorCities[selectedLocation]?.map((city: string) => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Detailed Address (Optional)</label>
+                      <input 
+                        type="text"
+                        value={customAddress}
+                        onChange={(e) => setCustomAddress(e.target.value)}
+                        placeholder="House number, street name, landmark..."
+                        className="w-full bg-white border border-black/5 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:ring-2 ring-black/10"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <button 
-                  disabled={items.length === 0}
+                  onClick={handleCheckout}
+                  disabled={items.length === 0 || !selectedLocation}
                   className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Checkout
+                  Checkout via WhatsApp
                 </button>
               </div>
             </motion.div>

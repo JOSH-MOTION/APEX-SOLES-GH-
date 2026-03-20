@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, Plus, Minus, ArrowRight, Search, Flame, Menu, ChevronRight, User as UserIcon, LogIn, LogOut, Zap } from "lucide-react";
+import { ShoppingBag, X, Plus, Minus, ArrowRight, Search, Flame, Menu, ChevronRight, User as UserIcon, LogIn, LogOut, Zap, Eye, EyeOff } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { getClientAuth, getClientDb, googleProvider } from "@/lib/firebase";
@@ -851,22 +851,89 @@ const Cart = ({ isOpen, onClose, items, onUpdateQuantity }: {
     setIsLoadingLocation(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // For demo purposes, we'll set Greater Accra as default
-          // In a real app, you'd use reverse geocoding API
-          setSelectedLocation("Greater Accra Region");
-          setCustomAddress("Current location detected");
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Use OpenStreetMap Nominatim API for reverse geocoding (free)
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18&accept-language=en`
+            );
+            const data = await response.json();
+            
+            if (data && data.address) {
+              const address = data.address;
+              let detectedRegion = "";
+              let detectedAddress = "";
+              
+              // Extract Ghana region information
+              if (address.state || address.region) {
+                detectedRegion = (address.state || address.region).includes("Region") 
+                  ? (address.state || address.region) 
+                  : `${address.state || address.region} Region`;
+              }
+              
+              // Build detailed address
+              const addressParts = [];
+              if (address.house_number) addressParts.push(address.house_number);
+              if (address.road) addressParts.push(address.road);
+              if (address.suburb) addressParts.push(address.suburb);
+              if (address.city || address.town || address.village) {
+                addressParts.push(address.city || address.town || address.village);
+              }
+              if (address.postcode) addressParts.push(address.postcode);
+              
+              detectedAddress = addressParts.join(", ");
+              
+              // Fallback to Greater Accra if no region detected
+              if (!detectedRegion) {
+                detectedRegion = "Greater Accra Region";
+                detectedAddress = detectedAddress || `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+              }
+              
+              setSelectedLocation(detectedRegion);
+              setCustomAddress(detectedAddress);
+            } else {
+              // Fallback if reverse geocoding fails
+              setSelectedLocation("Greater Accra Region");
+              setCustomAddress(`Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`);
+            }
+          } catch (error) {
+            console.error("Reverse geocoding failed:", error);
+            // Fallback to coordinates
+            setSelectedLocation("Greater Accra Region");
+            setCustomAddress(`Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`);
+          }
+          
           setIsLoadingLocation(false);
         },
         (error) => {
           console.error("Error getting location:", error);
+          // Handle different geolocation errors
+          let errorMessage = "";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "Location access denied. Please enable location permissions.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "Location information unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "Location request timed out.";
+              break;
+            default:
+              errorMessage = "An unknown error occurred.";
+          }
+          
+          alert(errorMessage);
           // Fallback to Greater Accra
           setSelectedLocation("Greater Accra Region");
+          setCustomAddress("Location detection failed - please select manually");
           setIsLoadingLocation(false);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0
         }
       );
@@ -1207,6 +1274,7 @@ const UserAuthModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -1282,14 +1350,23 @@ const UserAuthModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
-                  <input 
-                    type="password" 
-                    required 
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full bg-black/5 border border-black/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 ring-black/10 transition-all"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      required 
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full bg-black/5 border border-black/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:ring-2 ring-black/10 transition-all pr-12"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <button 
                   type="submit"

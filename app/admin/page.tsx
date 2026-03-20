@@ -6,7 +6,8 @@ import {
   ShoppingBag, X, Plus, Minus, ArrowRight, Search, 
   LayoutDashboard, PackagePlus, History, Zap, Flame, 
   Menu, ChevronRight, Trash2, Edit, LogOut, Lock, 
-  LayoutGrid, List, PlusCircle, Settings, FileText, Newspaper
+  LayoutGrid, List, PlusCircle, Settings, FileText, Newspaper,
+  Eye, EyeOff
 } from "lucide-react";
 import { googleProvider, getClientAuth, getClientDb } from "@/lib/firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
@@ -664,6 +665,8 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -709,7 +712,24 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
           <div className="space-y-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Admin PIN (6 Digits)</label>
-              <input type="password" required maxLength={6} value={pin} onChange={e => setPin(e.target.value)} className="appearance-none relative block w-full px-6 py-4 border border-black/5 bg-black/5 placeholder-gray-400 text-black rounded-2xl focus:outline-none focus:ring-2 ring-black/10 transition-all text-sm tracking-[1em] text-center" placeholder="••••••" />
+              <div className="relative">
+                <input 
+                  type={showPin ? "text" : "password"} 
+                  required 
+                  maxLength={6} 
+                  value={pin} 
+                  onChange={e => setPin(e.target.value)} 
+                  className="appearance-none relative block w-full px-6 py-4 pr-12 border border-black/5 bg-black/5 placeholder-gray-400 text-black rounded-2xl focus:outline-none focus:ring-2 ring-black/10 transition-all text-sm tracking-[1em] text-center" 
+                  placeholder="••••••" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                >
+                  {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
@@ -717,7 +737,24 @@ const AdminLogin = ({ onVerified }: { onVerified: () => void }) => {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
-              <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} className="appearance-none relative block w-full px-6 py-4 border border-black/5 bg-black/5 placeholder-gray-400 text-black rounded-2xl focus:outline-none focus:ring-2 ring-black/10 transition-all text-sm" placeholder="••••••••" />
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  required 
+                  minLength={6} 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  className="appearance-none relative block w-full px-6 py-4 pr-12 border border-black/5 bg-black/5 placeholder-gray-400 text-black rounded-2xl focus:outline-none focus:ring-2 ring-black/10 transition-all text-sm" 
+                  placeholder="••••••••" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
           <button type="submit" disabled={loading} className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-2xl text-white bg-black hover:bg-zinc-800 focus:outline-none transition-all shadow-xl disabled:opacity-50">

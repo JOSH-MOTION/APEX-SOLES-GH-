@@ -110,7 +110,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Local Business Schema - helps Google show rich results */}
-        
+        {/* Google Analytics */}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1FLN96BM0J"/>
+<script
+  dangerouslySetInnerHTML={{
+    __html: `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1FLN96BM0J');
+    `,
+  }}
+/>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

@@ -110,6 +110,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Local Business Schema - helps Google show rich results */}
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -156,6 +157,7 @@ export default function RootLayout({
             }),
           }}
         />
+        <meta name="google-site-verification" content="Ol2iqh_JBh4KR-CVvfJAafLMV69GKkunYFnZpupwDFo" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
         {children}

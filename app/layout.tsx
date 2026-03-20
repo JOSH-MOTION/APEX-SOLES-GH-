@@ -62,7 +62,7 @@ export const metadata: Metadata = {
   // Twitter / X
   twitter: {
     card: "summary_large_image",
-    title: "APEX SOLES GH | Premium Sneakers in Ghana",
+    title: "APEX SOLES GH | Buy Exclusive Sneakers in Accra, Ghana",
     description:
       "Accra's most exclusive sneaker destination. Shop Nike, Jordan, Yeezy & more. Delivery across Ghana.",
     images: ["https://www.apexsolesgh.com/og-image.jpg"],

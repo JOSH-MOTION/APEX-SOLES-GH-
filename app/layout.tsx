@@ -96,7 +96,7 @@ export const metadata: Metadata = {
 
   // Verification (add your codes after verifying)
   verification: {
-    google: "google-site-verification: google5f6f830725d31373.html",
+    google: "5f6f830725d31373",
     // yandex: "your-yandex-code",
   },
 };

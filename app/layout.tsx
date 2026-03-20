@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.apexsolesgh.com"),
   title: {
-    default: "APEX SOLES GH | Premium Sneakers in Ghana",
+    default: "APEX SOLES GH | Buy Exclusive Sneakers in Accra, Ghana",
     template: "%s | APEX SOLES GH",
   },
   description:

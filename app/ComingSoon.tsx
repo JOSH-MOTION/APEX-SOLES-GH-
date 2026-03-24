@@ -221,7 +221,7 @@ export default function ComingSoon({ launchDate }: { launchDate: string }) {
         }}>
           Launching{" "}
           <span style={{ color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>
-            Tuesday, March 25 · 2026
+            Tuesday, March 24 · 2026
           </span>
           {" "}· Accra, Ghana
         </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Image from "next/image";
 
 interface TimeLeft {
@@ -9,6 +9,7 @@ interface TimeLeft {
   minutes: number;
   seconds: number;
 }
+
 
 function getTimeLeft(launchDate: string): TimeLeft {
   const diff = new Date(launchDate).getTime() - Date.now();
@@ -23,7 +24,7 @@ function getTimeLeft(launchDate: string): TimeLeft {
 
 export default function ComingSoon({ launchDate }: { launchDate: string }) {
   const [time, setTime] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true);

@@ -1,8 +1,8 @@
 import ComingSoon from "./ComingSoon";
 import HomeClient from "./HomeClient";
 
-// Set launch date to Tuesday March 25, 2026
-const LAUNCH_DATE = new Date("2026-03-25T00:00:00");
+// Set launch date to Tuesday March 24, 2026
+const LAUNCH_DATE = new Date("2026-03-24T00:00:00");
 
 export default function Page() {
   const now = new Date();

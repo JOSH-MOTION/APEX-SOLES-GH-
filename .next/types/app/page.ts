@@ -1,4 +1,4 @@
-// File: /Users/codetrain/Desktop/APEX-SOLES-GH-/app/page.tsx
+// File: C:\Users\joshu\Desktop\WORKS\APEX-SOLES-GH-\app\page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

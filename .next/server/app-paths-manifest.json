@@ -1,3 +1,8 @@
 {
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/(pages)/women/page": "app/(pages)/women/page.js",
+  "/(pages)/culture/page": "app/(pages)/culture/page.js",
+  "/(pages)/archive/page": "app/(pages)/archive/page.js",
+  "/(pages)/contact/page": "app/(pages)/contact/page.js"
 }

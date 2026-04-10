@@ -5,11 +5,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/", "/men", "/women", "/drops", "/archive", "/culture", "/contact"],
         disallow: ["/admin", "/debug", "/api/"],
       },
     ],
-    sitemap: "https://www.apexsolesgh.com/sitemap.xml",
-    host: "https://www.apexsolesgh.com",
+    sitemap: "https://apexsoles.com/sitemap.xml",
+    host: "https://apexsoles.com",
   };
 }

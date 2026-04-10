@@ -286,10 +286,13 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
   const [blogLoading, setBlogLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: "", brand: "APEX SOLES", price: "", category: "Lifestyle",
+    name: "", brand: "Nike", price: "", category: "Lifestyle",
     description: "", image_url: "", color: "",
     sizes: [] as string[], colors: [] as string[], additional_images: [] as string[]
   });
+  const [brands, setBrands] = useState(["Nike", "Adidas", "Jordan", "New Balance", "Puma", "Reebok", "Under Armour", "APEX SOLES"]);
+  const [customBrand, setCustomBrand] = useState("");
+  const [showCustomBrandInput, setShowCustomBrandInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -352,6 +355,27 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
 
   const toggleSize = (size: string) => setFormData(prev => ({ ...prev, sizes: prev.sizes.includes(size) ? prev.sizes.filter(s => s !== size) : [...prev.sizes, size] }));
   const toggleColor = (color: string) => setFormData(prev => ({ ...prev, colors: prev.colors.includes(color) ? prev.colors.filter(c => c !== color) : [...prev.colors, color] }));
+
+  const handleBrandChange = (brand: string) => {
+    if (brand === "Other") {
+      setShowCustomBrandInput(true);
+      setFormData(prev => ({ ...prev, brand: "" }));
+    } else {
+      setShowCustomBrandInput(false);
+      setCustomBrand("");
+      setFormData(prev => ({ ...prev, brand }));
+    }
+  };
+
+  const handleCustomBrandAdd = () => {
+    if (customBrand.trim() && !brands.includes(customBrand.trim())) {
+      const newBrand = customBrand.trim();
+      setBrands(prev => [...prev, newBrand]);
+      setFormData(prev => ({ ...prev, brand: newBrand }));
+      setCustomBrand("");
+      setShowCustomBrandInput(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -474,6 +498,7 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
                 <thead>
                   <tr className="border-b border-black/5">
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Product</th>
+                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Brand</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Price</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
@@ -493,6 +518,7 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
                           </div>
                         </div>
                       </td>
+                      <td className="px-8 py-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-black/5 rounded-full text-black">{shoe.brand}</span></td>
                       <td className="px-8 py-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-black/5 rounded-full text-black">{shoe.category}</span></td>
                       <td className="px-8 py-6"><p className="text-sm font-black text-black">GHS {shoe.price}</p></td>
                       <td className="px-8 py-6 text-right">
@@ -520,6 +546,38 @@ const AdminPanel = ({ onShoeAdded, shoes }: { onShoeAdded: () => void, shoes: Sh
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Price (GHS)</label>
                     <input required type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-black/5 border border-black/5 rounded-2xl px-6 py-4 text-sm text-black focus:outline-none focus:ring-2 ring-black/10 transition-all" placeholder="e.g. 1500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Brand</label>
+                    <select value={formData.brand} onChange={e => handleBrandChange(e.target.value)} className="w-full bg-black/5 border border-black/5 rounded-2xl px-6 py-4 text-sm text-black focus:outline-none focus:ring-2 ring-black/10 transition-all appearance-none">
+                      {brands.map(brand => <option key={brand} className="bg-white">{brand}</option>)}
+                      <option value="Other" className="bg-white">+ Add New Brand</option>
+                    </select>
+                    {showCustomBrandInput && (
+                      <div className="flex gap-2 mt-2">
+                        <input 
+                          type="text"
+                          value={customBrand}
+                          onChange={e => setCustomBrand(e.target.value)}
+                          placeholder="Enter new brand name..."
+                          className="flex-1 bg-black/5 border border-black/5 rounded-xl px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 ring-black/10 transition-all"
+                        />
+                        <button 
+                          type="button"
+                          onClick={handleCustomBrandAdd}
+                          className="bg-black text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-zinc-800 transition-all"
+                        >
+                          Add
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => { setShowCustomBrandInput(false); setCustomBrand(""); setFormData(prev => ({ ...prev, brand: "Nike" })); }}
+                          className="bg-white border border-black/5 text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</label>

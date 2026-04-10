@@ -1,4 +1,4 @@
-// File: /Users/codetrain/Desktop/APEX-SOLES-GH-/app/layout.tsx
+// File: C:\Users\joshu\Desktop\WORKS\APEX-SOLES-GH-\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

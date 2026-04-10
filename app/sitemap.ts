@@ -1,47 +1,49 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = "https://apexsoles.com";
+  
   return [
     {
-      url: "https://www.apexsolesgh.com",
+      url: baseUrl,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
     },
     {
-      url: "https://www.apexsolesgh.com/#collection",
+      url: `${baseUrl}/men`,
       lastModified: new Date(),
-      changeFrequency: "daily",
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: "https://www.apexsolesgh.com/?page=men",
+      url: `${baseUrl}/women`,
       lastModified: new Date(),
       changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/drops`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
       priority: 0.8,
     },
     {
-      url: "https://www.apexsolesgh.com/?page=women",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: "https://www.apexsolesgh.com/?page=culture",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: "https://www.apexsolesgh.com/?page=drops",
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: "https://www.apexsolesgh.com/?page=contact",
+      url: `${baseUrl}/archive`,
       lastModified: new Date(),
       changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/culture`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
       priority: 0.5,
     },
   ];

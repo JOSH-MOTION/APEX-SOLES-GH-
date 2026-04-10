@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/debug", "/api/"],
       },
     ],
-    sitemap: "https://apexsoles.com/sitemap.xml",
-    host: "https://apexsoles.com",
+   sitemap: "https://www.apexsolesgh.com/sitemap.xml",
+host: "https://www.apexsolesgh.com",
   };
 }

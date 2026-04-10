@@ -12,8 +12,7 @@ import {
 import { googleProvider, getClientAuth, getClientDb } from "@/lib/firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, signInWithPopup, createUserWithEmailAndPassword } from "firebase/auth";
-import { Shoe } from "@/types";
-import { BlogPost } from "../HomeClient";
+import { Shoe, BlogPost } from "@/types";
 import Image from "next/image";
 
 const Logo = ({ className = "", variant = 'dark', height = 40 }: { 

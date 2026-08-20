@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { CartProvider } from "./CartProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.apexsolesgh.com"),
@@ -171,7 +172,7 @@ export default function RootLayout({
         <meta name="google-site-verification" content="Ol2iqh_JBh4KR-CVvfJAafLMV69GKkunYFnZpupwDFo" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        {children}
+        <CartProvider>{children}</CartProvider>
       </body>
     </html>
   );

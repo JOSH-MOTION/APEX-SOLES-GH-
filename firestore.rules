@@ -1,0 +1,89 @@
+// Firestore security rules for Apex Soles GH.
+//
+// THIS FILE IS NOT AUTO-DEPLOYED. It documents the rules this app's client-side
+// marketplace code (src/lib/market.ts, app/admin/page.tsx) needs to be safe.
+// To apply it: paste this into Firebase Console → Firestore Database → Rules,
+// or run `firebase deploy --only firestore:rules` if you have the Firebase CLI
+// set up for this project.
+//
+// IMPORTANT: replace the placeholder UID(s) below with your real admin Firebase
+// Auth UID(s) (Firebase Console → Authentication → Users, after signing into
+// /admin at least once). Keep this list in sync with src/lib/admin.ts's
+// ADMIN_UIDS — that file is for client-side UI gating only; THIS file is the
+// actual trust boundary.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.uid in [
+        'REPLACE_WITH_YOUR_FIREBASE_AUTH_UID'
+      ];
+    }
+
+    // ── Catalog: admin-curated, publicly readable ──────────────────────────
+    match /shoes/{shoeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Marketplace: any signed-in user can list/bid on their own behalf ───
+    match /asks/{askId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.status == 'active';
+      // Cancel your own ask, or admin moderation. Matching (active -> sold)
+      // is performed by market.ts as part of a transaction that also writes
+      // the paired sale — restrict that transition to signed-in users only
+      // when it's part of such a write (full validation of the paired sale
+      // write is hard to express here without Cloud Functions; treat this as
+      // a best-effort rule, not a guarantee, per the plan's documented ceiling).
+      allow update: if isSignedIn() && (
+        resource.data.sellerId == request.auth.uid || isAdmin() ||
+        (resource.data.status == 'active' && request.resource.data.status in ['sold', 'cancelled'])
+      );
+    }
+
+    match /offers/{offerId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.status == 'active';
+      allow update: if isSignedIn() && (
+        resource.data.buyerId == request.auth.uid || isAdmin() ||
+        (resource.data.status == 'active' && request.resource.data.status == 'matched')
+      );
+    }
+
+    // ── Sales: created by matching code only, immutable except fulfillment ─
+    match /sales/{saleId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        request.resource.data.buyerId == request.auth.uid ||
+        request.resource.data.sellerId == request.auth.uid
+      );
+      // Only fulfillmentStatus may change after creation, and only by admin.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fulfillmentStatus']);
+    }
+
+    // ── Wishlist ─────────────────────────────────────────────────────────
+    match /follows/{followId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

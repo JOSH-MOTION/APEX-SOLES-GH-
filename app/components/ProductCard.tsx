@@ -1,57 +1,66 @@
-import { Plus } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import { Heart } from "lucide-react";
 import { Shoe } from "@/types";
 
 interface ProductCardProps {
   shoe: Shoe;
-  onAddToCart: (s: Shoe) => void;
-  onClick: (s: Shoe) => void;
+  lowestAsk?: number;
+  soldCount?: number;
+  isFollowed?: boolean;
+  onToggleFollow?: (shoe: Shoe) => void;
 }
 
-export const ProductCard = ({ shoe, onAddToCart, onClick }: ProductCardProps) => (
-  <div 
-    onClick={() => onClick(shoe)}
-    className="group bg-white rounded-2xl border border-black/5 overflow-hidden hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)] transition-all duration-500 cursor-pointer"
-  >
-    <div className="aspect-square bg-[#f8f8f8] relative overflow-hidden">
-      <img 
-        src={shoe.image_url} 
-        alt={shoe.name} 
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-        referrerPolicy="no-referrer"
-      />
-      {shoe.colors && shoe.colors.length > 1 && (
-        <div className="absolute top-4 right-4 flex gap-1">
-           <span className="text-[8px] font-black uppercase tracking-widest bg-white/80 backdrop-blur-sm text-black px-2 py-1 rounded-full border border-black/5">
-             +{shoe.colors.length - 1} Colors
-           </span>
+export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFollow }: ProductCardProps) => {
+  const hasAsk = typeof lowestAsk === "number";
+  const displayPrice = hasAsk ? lowestAsk : shoe.price;
+
+  return (
+    <Link
+      href={`/product/${shoe.id}`}
+      className="group block bg-[#141414] rounded-lg border border-white/10 overflow-hidden hover:border-white/20 hover:shadow-[0_10px_20px_rgba(0,0,0,0.4)] transition-all duration-500"
+    >
+      <div className="aspect-square bg-[#1c1c1c] relative overflow-hidden">
+        <img
+          src={shoe.image_url}
+          alt={shoe.name}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+          {shoe.colors && shoe.colors.length > 1 && (
+            <span className="text-[7px] font-black uppercase tracking-wide bg-black/70 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full border border-white/10">
+              +{shoe.colors.length - 1}
+            </span>
+          )}
+          {!!soldCount && soldCount > 0 && (
+            <span className="text-[7px] font-black uppercase tracking-wide bg-[#c6ff00] text-black px-1.5 py-0.5 rounded-full">
+              {soldCount} Sold
+            </span>
+          )}
         </div>
-      )}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          onAddToCart(shoe);
-        }}
-        className="absolute bottom-4 right-4 bg-black text-white p-3 rounded-full shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all hover:bg-zinc-800 z-10"
-      >
-        <Plus size={20} />
-      </button>
-    </div>
-    <div className="p-5">
-      <div className="flex justify-between items-start mb-1">
-        <h3 className="font-bold text-black group-hover:text-gray-600 transition-colors">{shoe.name}</h3>
-        <span className="font-mono font-bold text-sm text-black">GH¢ {shoe.price.toLocaleString()}</span>
-      </div>
-      <p className="text-xs text-gray-400 mb-3">{shoe.color}</p>
-      <div className="flex justify-between items-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-black/20 bg-black/5 px-2 py-1 rounded">
-          {shoe.category}
-        </span>
-        {shoe.sizes && shoe.sizes.length > 0 && (
-          <span className="text-[8px] font-bold text-gray-300 uppercase tracking-widest">
-            {shoe.sizes.length} Sizes
-          </span>
+        {onToggleFollow && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleFollow(shoe);
+            }}
+            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:text-[#c6ff00] transition-colors z-10"
+          >
+            <Heart size={12} fill={isFollowed ? "#c6ff00" : "none"} className={isFollowed ? "text-[#c6ff00]" : ""} />
+          </button>
         )}
       </div>
-    </div>
-  </div>
-);
+      <div className="p-2.5">
+        <h3 className="text-xs font-bold text-white group-hover:text-[#c6ff00] transition-colors truncate leading-tight">{shoe.name}</h3>
+        <p className="text-[10px] text-gray-500 mb-1.5 truncate">{shoe.brand}</p>
+        <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">
+          {hasAsk ? "Lowest Ask" : "From"}
+        </p>
+        <span className="font-mono font-black text-sm text-white">GH¢ {displayPrice?.toLocaleString()}</span>
+      </div>
+    </Link>
+  );
+};

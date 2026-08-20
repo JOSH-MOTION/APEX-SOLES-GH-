@@ -18,10 +18,10 @@ export const HorizontalGallery = ({ shoes }: HorizontalGalleryProps) => {
   const displayImages = shoes.length > 0 ? shoes.map(s => s.image_url) : fallbackImages;
 
   return (
-    <section className="py-12 overflow-hidden bg-white">
+    <section className="py-12 overflow-hidden bg-[#0a0a0a]">
       <div className="flex gap-4 animate-marquee whitespace-nowrap">
         {[...displayImages, ...displayImages, ...displayImages].map((src, i) => (
-          <div key={i} className="inline-block w-64 h-80 flex-shrink-0 rounded-2xl overflow-hidden border border-black/5">
+          <div key={i} className="inline-block w-64 h-80 flex-shrink-0 rounded-2xl overflow-hidden border border-white/10">
             <img src={src} className="w-full h-full object-cover hover:scale-110 transition-transform duration-700" alt="Gallery" referrerPolicy="no-referrer" />
           </div>
         ))}

@@ -120,7 +120,7 @@ export const Hero = () => {
                 const el = document.getElementById('collection');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="bg-white text-black px-12 py-5 rounded-md font-black text-xs tracking-widest uppercase hover:bg-gray-100 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.3)] group inline-flex items-center gap-3"
+              className="bg-[#c6ff00] text-black px-12 py-5 rounded-md font-black text-xs tracking-widest uppercase hover:bg-[#d4ff33] transition-all shadow-[0_20px_40px_rgba(0,0,0,0.3)] group inline-flex items-center gap-3"
             >
               {slides[currentSlide].cta} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </motion.button>

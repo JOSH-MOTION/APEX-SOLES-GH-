@@ -85,5 +85,17 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
+
+    // ── Pre-orders: a lead for PRE-ORDER-labeled products (no real stock
+    // behind them, so no ask/offer matching) — created by the buyer, status
+    // progressed by admin only as the deposit/sourcing/arrival happens.
+    match /preorders/{preorderId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.status == 'requested';
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
   }
 }

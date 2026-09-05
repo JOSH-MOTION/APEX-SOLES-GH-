@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock, X, ShoppingBag, Tag, Receipt } from "lucide-react";
+import { Lock, X, ShoppingBag, Tag, Receipt, Clock } from "lucide-react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useShoes } from "@/hooks/useShoes";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { Ask, Offer, Sale } from "@/types";
-import { getMyAsks, getMyOffers, getMySales, cancelAsk, cancelOffer } from "@/lib/market";
+import { Ask, Offer, Sale, Preorder } from "@/types";
+import { getMyAsks, getMyOffers, getMySales, getMyPreorders, cancelAsk, cancelOffer } from "@/lib/market";
 
-type Tab = "offers" | "listings" | "sales";
+type Tab = "offers" | "listings" | "sales" | "preorders";
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuthUser();
@@ -18,6 +18,7 @@ export default function AccountPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [asks, setAsks] = useState<Ask[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [preorders, setPreorders] = useState<Preorder[]>([]);
   const [loading, setLoading] = useState(true);
 
   const shoeName = (shoeId: string) => shoes.find((s) => String(s.id) === shoeId)?.name || "Unknown Sneaker";
@@ -26,10 +27,11 @@ export default function AccountPage() {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const [o, a, s] = await Promise.all([getMyOffers(user.uid), getMyAsks(user.uid), getMySales(user.uid)]);
+    const [o, a, s, p] = await Promise.all([getMyOffers(user.uid), getMyAsks(user.uid), getMySales(user.uid), getMyPreorders(user.uid)]);
     setOffers(o);
     setAsks(a);
     setSales(s);
+    setPreorders(p);
     setLoading(false);
   };
 
@@ -52,6 +54,7 @@ export default function AccountPage() {
     { id: "offers", label: "My Bids", icon: ShoppingBag, count: offers.length },
     { id: "listings", label: "My Listings", icon: Tag, count: asks.length },
     { id: "sales", label: "My Sales", icon: Receipt, count: sales.length },
+    { id: "preorders", label: "My Pre-Orders", icon: Clock, count: preorders.length },
   ];
 
   return (
@@ -59,7 +62,7 @@ export default function AccountPage() {
       <Navbar />
       <main className="max-w-5xl mx-auto px-6 py-16">
         <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-2">My Account</h1>
-        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-12">Track your bids, listings and completed trades.</p>
+        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-12">Track your bids, listings, pre-orders and completed trades.</p>
 
         {authLoading ? (
           <div className="flex justify-center py-24">
@@ -128,6 +131,22 @@ export default function AccountPage() {
                           subtitle={`Size ${s.size} · You ${s.buyerId === user.uid ? "bought" : "sold"}`}
                           price={s.price}
                           status={s.fulfillmentStatus}
+                        />
+                      ))}
+                    </div>
+                  )
+                )}
+                {tab === "preorders" && (
+                  preorders.length === 0 ? <EmptyState text="No pre-order requests yet." /> : (
+                    <div className="divide-y divide-white/5">
+                      {preorders.map((p) => (
+                        <Row
+                          key={p.id}
+                          image={shoeImage(p.shoeId)}
+                          title={p.shoeName}
+                          subtitle={`Size ${p.size} · Deposit GH¢ ${p.depositAmount.toLocaleString()} · ETA ${p.eta}`}
+                          price={p.price}
+                          status={p.status.replace("_", " ")}
                         />
                       ))}
                     </div>

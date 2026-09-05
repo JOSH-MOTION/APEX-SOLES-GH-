@@ -21,7 +21,11 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getClientDb } from "./firebase";
-import { Ask, Offer, Sale, FulfillmentStatus, Follow } from "@/types";
+import { Ask, Offer, Sale, FulfillmentStatus, Follow, Preorder, PreorderStatus } from "@/types";
+
+// Site-wide deposit rate for pre-orders. A single constant, not a per-product
+// field — keeps the deposit math predictable for both admin and customers.
+export const PREORDER_DEPOSIT_PERCENT = 30;
 
 const CANDIDATE_LIMIT = 8;
 const STALE_CANDIDATE = "STALE_CANDIDATE";
@@ -471,4 +475,54 @@ export async function getFollowedShoeIds(userId: string): Promise<Set<string>> {
   const db = getClientDb();
   const snap = await getDocs(query(collection(db, "follows"), where("userId", "==", userId)));
   return new Set(snap.docs.map((d) => (d.data() as Follow).shoeId));
+}
+
+// ─── PRE-ORDERS ─────────────────────────────────────────────────────────────
+// PRE-ORDER products have no real stock behind them, so there's nothing to
+// match against an ask — this just records a lead for the admin to action
+// (deposit, sourcing, arrival) over WhatsApp, separate from the sales ledger.
+
+export async function createPreorderRequest(input: {
+  shoeId: string;
+  shoeName: string;
+  size: string;
+  price: number;
+  eta: string;
+  buyerId: string;
+  buyerName: string;
+}): Promise<{ preorderId: string; depositAmount: number }> {
+  const db = getClientDb();
+  const depositAmount = Math.round((input.price * PREORDER_DEPOSIT_PERCENT) / 100);
+  const preorder: Omit<Preorder, "id"> = {
+    shoeId: input.shoeId,
+    shoeName: input.shoeName,
+    size: input.size,
+    price: input.price,
+    depositAmount,
+    eta: input.eta,
+    buyerId: input.buyerId,
+    buyerName: input.buyerName,
+    status: "requested",
+    createdAt: nowIso(),
+  };
+  const ref = await addDoc(collection(db, "preorders"), preorder);
+  return { preorderId: ref.id, depositAmount };
+}
+
+export async function updatePreorderStatus(preorderId: string, status: PreorderStatus) {
+  await updateDoc(doc(getClientDb(), "preorders", preorderId), { status });
+}
+
+export async function getMyPreorders(buyerId: string): Promise<Preorder[]> {
+  const db = getClientDb();
+  const snap = await getDocs(
+    query(collection(db, "preorders"), where("buyerId", "==", buyerId), orderBy("createdAt", "desc"))
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Preorder));
+}
+
+export async function getAllPreorders(): Promise<Preorder[]> {
+  const db = getClientDb();
+  const snap = await getDocs(query(collection(db, "preorders"), orderBy("createdAt", "desc"), limit(200)));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Preorder));
 }

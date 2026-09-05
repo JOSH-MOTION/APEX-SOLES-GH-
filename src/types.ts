@@ -1,3 +1,7 @@
+// A product with no stockStatus set (every pre-rebuild product) is treated as
+// 'in_stock' everywhere — that's the historical default, not a real choice.
+export type StockStatus = 'in_stock' | 'pre_order' | 'coming_soon';
+
 export interface Shoe {
   id: string | number;
   name: string;
@@ -13,6 +17,9 @@ export interface Shoe {
   styleCode?: string;
   releaseDate?: string;
   retailPrice?: number;
+  stockStatus?: StockStatus;
+  // Only meaningful when stockStatus === 'pre_order', e.g. "7-14 days".
+  preOrderEta?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -118,5 +125,31 @@ export interface Follow {
   id: string;
   userId: string;
   shoeId: string;
+  createdAt: string;
+}
+
+export type PreorderStatus =
+  | 'requested'
+  | 'deposit_paid'
+  | 'sourcing'
+  | 'arrived'
+  | 'completed'
+  | 'cancelled';
+
+// A pre-order request: the buyer wants a PRE-ORDER-labeled product Apex Soles
+// doesn't hold in stock. There is no ask/offer matching here — this is a lead
+// captured for the admin to action (deposit, sourcing, arrival) over WhatsApp,
+// tracked in the Pre-Orders admin tab instead of the bid/ask ledger.
+export interface Preorder {
+  id: string;
+  shoeId: string;
+  shoeName: string;
+  size: string;
+  price: number;
+  depositAmount: number;
+  eta: string;
+  buyerId: string;
+  buyerName: string;
+  status: PreorderStatus;
   createdAt: string;
 }

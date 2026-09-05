@@ -7,13 +7,14 @@ import {
   LayoutDashboard, PackagePlus, Zap,
   Trash2, Edit, LogOut, Lock,
   LayoutGrid, List, PlusCircle, FileText, Newspaper,
-  Eye, EyeOff, Tag, Handshake, Receipt, CheckCircle2
+  Eye, EyeOff, Tag, Handshake, Receipt, CheckCircle2, Clock
 } from "lucide-react";
 import { googleProvider, getClientAuth, getClientDb } from "@/lib/firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, signInWithPopup, createUserWithEmailAndPassword } from "firebase/auth";
-import { Shoe, BlogPost, Ask, Offer, Sale, FulfillmentStatus } from "@/types";
-import { placeAsk, cancelAsk, getAllActiveAsks, getAllActiveOffers, getAllSales, adminAcceptOffer, updateSaleFulfillment } from "@/lib/market";
+import { Shoe, BlogPost, Ask, Offer, Sale, FulfillmentStatus, StockStatus, PreorderStatus, Preorder } from "@/types";
+import { placeAsk, cancelAsk, getAllActiveAsks, getAllActiveOffers, getAllSales, adminAcceptOffer, updateSaleFulfillment, getAllPreorders, updatePreorderStatus, PREORDER_DEPOSIT_PERCENT } from "@/lib/market";
+import { STOCK_STATUS_CONFIG, resolveStockStatus } from "@/lib/stockStatus";
 import Image from "next/image";
 
 const Logo = ({ className = "", variant = 'light', height = 40 }: {
@@ -214,7 +215,7 @@ const BlogPostForm = ({
 
 // ─── ADMIN PANEL ───────────────────────────────────────────────────────────────
 const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, shoes: Shoe[], user: User }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'inventory' | 'add' | 'blog' | 'new_post' | 'listings' | 'offers' | 'sales'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'inventory' | 'add' | 'blog' | 'new_post' | 'listings' | 'offers' | 'sales' | 'preorders'>('overview');
   const [editingShoe, setEditingShoe] = useState<Shoe | null>(null);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
@@ -223,6 +224,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const [asks, setAsks] = useState<Ask[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [preorders, setPreorders] = useState<Preorder[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
   const [listStockShoe, setListStockShoe] = useState<Shoe | null>(null);
   const [listStockSize, setListStockSize] = useState("");
@@ -231,6 +233,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const [formData, setFormData] = useState({
     name: "", brand: "Nike", price: "", category: "Lifestyle",
     description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "",
+    stockStatus: "in_stock" as StockStatus, preOrderEta: "",
     sizes: [] as string[], colors: [] as string[], additional_images: [] as string[]
   });
   const [brands, setBrands] = useState(["Nike", "Adidas", "Jordan", "New Balance", "Puma", "Reebok", "Under Armour", "APEX SOLES"]);
@@ -260,17 +263,18 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const fetchMarketData = async () => {
     setMarketLoading(true);
     try {
-      const [a, o, s] = await Promise.all([getAllActiveAsks(), getAllActiveOffers(), getAllSales()]);
+      const [a, o, s, p] = await Promise.all([getAllActiveAsks(), getAllActiveOffers(), getAllSales(), getAllPreorders()]);
       setAsks(a);
       setOffers(o);
       setSales(s);
+      setPreorders(p);
     } catch (err) { console.error(err); }
     setMarketLoading(false);
   };
 
   useEffect(() => {
     if (activeTab === 'blog') fetchBlogPosts();
-    if (['listings', 'offers', 'sales', 'overview'].includes(activeTab)) fetchMarketData();
+    if (['listings', 'offers', 'sales', 'preorders', 'overview'].includes(activeTab)) fetchMarketData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -283,6 +287,8 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
         color: editingShoe.color,
         styleCode: editingShoe.styleCode || "", releaseDate: editingShoe.releaseDate || "",
         retailPrice: editingShoe.retailPrice?.toString() || "",
+        stockStatus: editingShoe.stockStatus || "in_stock",
+        preOrderEta: editingShoe.preOrderEta || "",
         sizes: editingShoe.sizes || [],
         colors: editingShoe.colors || [editingShoe.color],
         additional_images: editingShoe.additional_images || []
@@ -338,7 +344,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
     }
   };
 
-  const resetForm = () => setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "", sizes: [], colors: [], additional_images: [] });
+  const resetForm = () => setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "", stockStatus: "in_stock", preOrderEta: "", sizes: [], colors: [], additional_images: [] });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,6 +360,8 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
         styleCode: formData.styleCode || null,
         releaseDate: formData.releaseDate || null,
         retailPrice: formData.retailPrice ? parseFloat(formData.retailPrice) : null,
+        stockStatus: formData.stockStatus,
+        preOrderEta: formData.stockStatus === "pre_order" ? (formData.preOrderEta || "7-14 days") : null,
       };
       if (editingShoe) {
         await updateDoc(doc(firestore, "shoes", editingShoe.id.toString()), { ...payload, updatedAt: new Date().toISOString() });
@@ -363,7 +371,9 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
         const docRef = await addDoc(collection(firestore, "shoes"), { ...payload, createdAt: new Date().toISOString() });
         // Give the new product instant marketplace liquidity: list it as an
         // active ask at the price the admin just set, for every size selected.
-        if (formData.sizes.length > 0 && formData.price) {
+        // Only for real in-stock inventory — PRE-ORDER/COMING SOON products
+        // have no physical pair behind them to list as an ask.
+        if (formData.stockStatus === "in_stock" && formData.sizes.length > 0 && formData.price) {
           await Promise.all(formData.sizes.map(size => placeAsk({
             shoeId: docRef.id,
             size,
@@ -374,7 +384,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
             sellerType: "admin",
           })));
         }
-        alert("Sneaker added and listed for sale!");
+        alert(formData.stockStatus === "in_stock" ? "Sneaker added and listed for sale!" : "Sneaker added to catalogue!");
       }
       resetForm();
       onShoeAdded();
@@ -420,6 +430,11 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
     fetchMarketData();
   };
 
+  const handlePreorderStatusChange = async (preorderId: string, status: PreorderStatus) => {
+    await updatePreorderStatus(preorderId, status);
+    fetchMarketData();
+  };
+
   const handleLogout = async () => { await signOut(getClientAuth()); sessionStorage.removeItem("admin_verified"); };
 
   const tabs = [
@@ -429,6 +444,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
     { id: 'listings', label: 'Listings', icon: Tag },
     { id: 'offers', label: 'Offers', icon: Handshake },
     { id: 'sales', label: 'Sales', icon: Receipt },
+    { id: 'preorders', label: 'Pre-Orders', icon: Clock },
     { id: 'blog', label: 'Blog Posts', icon: FileText },
     { id: 'new_post', label: editingPost ? 'Edit Post' : 'New Post', icon: Newspaper },
   ];
@@ -450,12 +466,13 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           {[
             { label: 'Total Products', value: shoes.length, icon: PackagePlus },
             { label: 'Active Listings', value: asks.length, icon: Tag },
             { label: 'Pending Offers', value: offers.length, icon: Handshake },
             { label: 'Total Sales', value: sales.length, icon: Receipt },
+            { label: 'Pre-Orders', value: preorders.length, icon: Clock },
           ].map((stat, i) => (
             <div key={i} className="bg-[#141414] p-6 rounded-3xl border border-white/10">
               <div className="flex items-center justify-between mb-4">
@@ -507,6 +524,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                     <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Product</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Brand</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Category</th>
+                    <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Status</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest">Price</th>
                     <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>
                   </tr>
@@ -527,6 +545,13 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                       </td>
                       <td className="px-8 py-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-full text-white">{shoe.brand}</span></td>
                       <td className="px-8 py-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-full text-white">{shoe.category}</span></td>
+                      <td className="px-8 py-6">
+                        {(() => { const st = resolveStockStatus(shoe.stockStatus); return (
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${STOCK_STATUS_CONFIG[st].badgeClass}`}>
+                            {STOCK_STATUS_CONFIG[st].dot} {STOCK_STATUS_CONFIG[st].label}
+                          </span>
+                        ); })()}
+                      </td>
                       <td className="px-8 py-6"><p className="text-sm font-black text-white">GHS {shoe.price}</p></td>
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -593,15 +618,41 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                 </div>
 
                 <div className="space-y-4">
+                  <label className={labelClass}>Stock Status</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {(["in_stock", "pre_order", "coming_soon"] as StockStatus[]).map(st => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, stockStatus: st })}
+                        className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.stockStatus === st ? 'bg-[#c6ff00] text-black border-[#c6ff00]' : 'bg-white/5 text-white border-white/10 hover:border-white/30'}`}
+                      >
+                        {STOCK_STATUS_CONFIG[st].dot} {STOCK_STATUS_CONFIG[st].label}
+                      </button>
+                    ))}
+                  </div>
+                  {formData.stockStatus === "pre_order" && (
+                    <input
+                      value={formData.preOrderEta}
+                      onChange={e => setFormData({ ...formData, preOrderEta: e.target.value })}
+                      className={inputClass}
+                      placeholder="Estimated arrival, e.g. 7-14 days"
+                    />
+                  )}
+                  {formData.stockStatus === "in_stock" ? (
+                    <p className="text-[10px] text-gray-500">Selected sizes are auto-listed as active asks at the price above.</p>
+                  ) : (
+                    <p className="text-[10px] text-gray-500">No asks are created for {STOCK_STATUS_CONFIG[formData.stockStatus].label.toLowerCase()} items — customers {formData.stockStatus === "pre_order" ? "request a pre-order" : "follow for a notification"} instead.</p>
+                  )}
+                </div>
+
+                <div className="space-y-4">
                   <label className={labelClass}>Available Sizes</label>
                   <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
                     {["US 6", "US 7", "US 8", "US 9", "US 10", "US 11", "US 12", "US 13", "US 14", "US 15"].map(size => (
                       <button key={size} type="button" onClick={() => toggleSize(size)} className={`py-3 rounded-xl text-[10px] font-black transition-all border ${formData.sizes.includes(size) ? 'bg-[#c6ff00] text-black border-[#c6ff00]' : 'bg-white/5 text-white border-white/10 hover:border-white/30'}`}>{size}</button>
                     ))}
                   </div>
-                  {!editingShoe && (
-                    <p className="text-[10px] text-gray-500">Each selected size gets listed as an active ask at the price above — instant marketplace liquidity for this new product.</p>
-                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -741,6 +792,44 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                       >
                         {(["pending", "contacted", "shipped", "completed", "cancelled"] as FulfillmentStatus[]).map(st => (
                           <option key={st} value={st} className="bg-[#141414]">{st}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'preorders' && (
+            <div>
+              <div className="flex items-center justify-between px-8 py-6 border-b border-white/10">
+                <h3 className="text-lg font-black italic uppercase tracking-tighter text-white">Pre-Order Requests</h3>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{PREORDER_DEPOSIT_PERCENT}% deposit required on all</p>
+              </div>
+              {marketLoading ? (
+                <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-white/20 border-t-[#c6ff00] rounded-full animate-spin" /></div>
+              ) : preorders.length === 0 ? (
+                <p className="text-center text-gray-500 text-xs font-bold uppercase tracking-widest py-16">No pre-order requests yet.</p>
+              ) : (
+                <div className="divide-y divide-white/5">
+                  {preorders.map(p => (
+                    <div key={p.id} className="flex items-center gap-6 px-8 py-5">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black italic uppercase tracking-tight text-white truncate">{p.shoeName}</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Size {p.size} · {p.buyerName} · ETA {p.eta} · {new Date(p.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-mono font-black text-[#c6ff00]">GH¢ {p.price.toLocaleString()}</p>
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Deposit GH¢ {p.depositAmount.toLocaleString()}</p>
+                      </div>
+                      <select
+                        value={p.status}
+                        onChange={e => handlePreorderStatusChange(p.id, e.target.value as PreorderStatus)}
+                        className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+                      >
+                        {(["requested", "deposit_paid", "sourcing", "arrived", "completed", "cancelled"] as PreorderStatus[]).map(st => (
+                          <option key={st} value={st} className="bg-[#141414]">{st.replace("_", " ")}</option>
                         ))}
                       </select>
                     </div>

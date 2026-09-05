@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { Shoe } from "@/types";
+import { resolveStockStatus, STOCK_STATUS_CONFIG } from "@/lib/stockStatus";
 
 interface ProductCardProps {
   shoe: Shoe;
@@ -13,8 +14,11 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFollow }: ProductCardProps) => {
-  const hasAsk = typeof lowestAsk === "number";
+  const status = resolveStockStatus(shoe.stockStatus);
+  const statusConfig = STOCK_STATUS_CONFIG[status];
+  const hasAsk = status === "in_stock" && typeof lowestAsk === "number";
   const displayPrice = hasAsk ? lowestAsk : shoe.price;
+  const priceLabel = status === "pre_order" ? "Pre-Order Price" : status === "coming_soon" ? "Est. Price" : hasAsk ? "Lowest Ask" : "From";
 
   return (
     <Link
@@ -29,6 +33,9 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
           referrerPolicy="no-referrer"
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+          <span className={`text-[7px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full border backdrop-blur-sm ${statusConfig.badgeClass}`}>
+            {statusConfig.dot} {statusConfig.label}
+          </span>
           {shoe.colors && shoe.colors.length > 1 && (
             <span className="text-[7px] font-black uppercase tracking-wide bg-black/70 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full border border-white/10">
               +{shoe.colors.length - 1}
@@ -57,7 +64,7 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
         <h3 className="text-xs font-bold text-white group-hover:text-[#c6ff00] transition-colors truncate leading-tight">{shoe.name}</h3>
         <p className="text-[10px] text-gray-500 mb-1.5 truncate">{shoe.brand}</p>
         <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">
-          {hasAsk ? "Lowest Ask" : "From"}
+          {priceLabel}
         </p>
         <span className="font-mono font-black text-sm text-white">GH¢ {displayPrice?.toLocaleString()}</span>
       </div>

@@ -239,6 +239,12 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const [brands, setBrands] = useState(["Nike", "Adidas", "Jordan", "New Balance", "Puma", "Reebok", "Under Armour", "APEX SOLES"]);
   const [customBrand, setCustomBrand] = useState("");
   const [showCustomBrandInput, setShowCustomBrandInput] = useState(false);
+  const [categories, setCategories] = useState<string[]>(() => {
+    const defaults = ["Men", "Women", "Unisex", "Performance", "Lifestyle", "Limited"];
+    return Array.from(new Set([...defaults, ...shoes.map(s => s.category)]));
+  });
+  const [customCategory, setCustomCategory] = useState("");
+  const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -341,6 +347,27 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
       setFormData(prev => ({ ...prev, brand: newBrand }));
       setCustomBrand("");
       setShowCustomBrandInput(false);
+    }
+  };
+
+  const handleCategoryChange = (category: string) => {
+    if (category === "Other") {
+      setShowCustomCategoryInput(true);
+      setFormData(prev => ({ ...prev, category: "" }));
+    } else {
+      setShowCustomCategoryInput(false);
+      setCustomCategory("");
+      setFormData(prev => ({ ...prev, category }));
+    }
+  };
+
+  const handleCustomCategoryAdd = () => {
+    if (customCategory.trim() && !categories.includes(customCategory.trim())) {
+      const newCategory = customCategory.trim();
+      setCategories(prev => [...prev, newCategory]);
+      setFormData(prev => ({ ...prev, category: newCategory }));
+      setCustomCategory("");
+      setShowCustomCategoryInput(false);
     }
   };
 
@@ -595,9 +622,17 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                   </div>
                   <div className="space-y-2">
                     <label className={labelClass}>Category</label>
-                    <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className={inputClass + " appearance-none"}>
-                      {["Men", "Women", "Unisex", "Performance", "Lifestyle", "Limited"].map(c => <option key={c} className="bg-[#141414]">{c}</option>)}
+                    <select value={formData.category} onChange={e => handleCategoryChange(e.target.value)} className={inputClass + " appearance-none"}>
+                      {categories.map(c => <option key={c} className="bg-[#141414]">{c}</option>)}
+                      <option value="Other" className="bg-[#141414]">+ Add New Category</option>
                     </select>
+                    {showCustomCategoryInput && (
+                      <div className="flex gap-2 mt-2">
+                        <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="Enter new category name..." className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 ring-[#c6ff00]/30 transition-all" />
+                        <button type="button" onClick={handleCustomCategoryAdd} className="bg-[#c6ff00] text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#d4ff33] transition-all">Add</button>
+                        <button type="button" onClick={() => { setShowCustomCategoryInput(false); setCustomCategory(""); setFormData(prev => ({ ...prev, category: categories[0] || "Lifestyle" })); }} className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">Cancel</button>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className={labelClass}>Main Colorway</label>

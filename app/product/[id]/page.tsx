@@ -282,8 +282,8 @@ export default function ProductPage() {
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <p className="text-gray-500 text-xs font-black tracking-widest uppercase">{shoe.brand}</p>
-                  <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusConfig.badgeClass}`}>
-                    {statusConfig.dot} {statusConfig.label}
+                  <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusConfig.badgeClass}`}>
+                    <statusConfig.Icon size={12} strokeWidth={2.5} /> {statusConfig.label}
                   </span>
                 </div>
                 <h1 className="text-4xl lg:text-5xl font-black italic uppercase tracking-tighter leading-none mt-1">{shoe.name}</h1>

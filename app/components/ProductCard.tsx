@@ -33,8 +33,8 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
           referrerPolicy="no-referrer"
         />
         <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-          <span className={`text-[7px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full border backdrop-blur-sm ${statusConfig.badgeClass}`}>
-            {statusConfig.dot} {statusConfig.label}
+          <span className={`flex items-center gap-1 text-[7px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full border backdrop-blur-sm ${statusConfig.badgeClass}`}>
+            <statusConfig.Icon size={8} strokeWidth={3} /> {statusConfig.label}
           </span>
           {shoe.colors && shoe.colors.length > 1 && (
             <span className="text-[7px] font-black uppercase tracking-wide bg-black/70 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full border border-white/10">

@@ -573,9 +573,9 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                       <td className="px-8 py-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-full text-white">{shoe.brand}</span></td>
                       <td className="px-8 py-6"><span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-full text-white">{shoe.category}</span></td>
                       <td className="px-8 py-6">
-                        {(() => { const st = resolveStockStatus(shoe.stockStatus); return (
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${STOCK_STATUS_CONFIG[st].badgeClass}`}>
-                            {STOCK_STATUS_CONFIG[st].dot} {STOCK_STATUS_CONFIG[st].label}
+                        {(() => { const st = resolveStockStatus(shoe.stockStatus); const StatusIcon = STOCK_STATUS_CONFIG[st].Icon; return (
+                          <span className={`flex items-center gap-1.5 w-fit text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${STOCK_STATUS_CONFIG[st].badgeClass}`}>
+                            <StatusIcon size={12} strokeWidth={2.5} /> {STOCK_STATUS_CONFIG[st].label}
                           </span>
                         ); })()}
                       </td>
@@ -655,16 +655,19 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                 <div className="space-y-4">
                   <label className={labelClass}>Stock Status</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {(["in_stock", "pre_order", "coming_soon"] as StockStatus[]).map(st => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, stockStatus: st })}
-                        className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.stockStatus === st ? 'bg-[#c6ff00] text-black border-[#c6ff00]' : 'bg-white/5 text-white border-white/10 hover:border-white/30'}`}
-                      >
-                        {STOCK_STATUS_CONFIG[st].dot} {STOCK_STATUS_CONFIG[st].label}
-                      </button>
-                    ))}
+                    {(["in_stock", "pre_order", "coming_soon"] as StockStatus[]).map(st => {
+                      const StatusIcon = STOCK_STATUS_CONFIG[st].Icon;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, stockStatus: st })}
+                          className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${formData.stockStatus === st ? 'bg-[#c6ff00] text-black border-[#c6ff00]' : 'bg-white/5 text-white border-white/10 hover:border-white/30'}`}
+                        >
+                          <StatusIcon size={13} strokeWidth={2.5} /> {STOCK_STATUS_CONFIG[st].label}
+                        </button>
+                      );
+                    })}
                   </div>
                   {formData.stockStatus === "pre_order" && (
                     <input

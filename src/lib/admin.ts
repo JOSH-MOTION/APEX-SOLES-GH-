@@ -5,7 +5,7 @@
 // Firebase Auth UID(s) below — find it in Firebase Console → Authentication → Users
 // after signing in once through /admin.
 export const ADMIN_UIDS: string[] = [
-  // "REPLACE_WITH_YOUR_FIREBASE_AUTH_UID",
+  "oK9ql3eVJoaMShN2BeeMqjfCXj23",
 ];
 
 export function isAdminUid(uid: string | null | undefined): boolean {

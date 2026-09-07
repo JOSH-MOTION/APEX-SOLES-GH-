@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, X, Menu, Search, User as UserIcon, LogOut, ClipboardList, LayoutGrid, ChevronDown, ChevronRight } from "lucide-react";
 import { signOut } from "firebase/auth";
@@ -25,6 +25,21 @@ export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const closeMenuTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hover-to-open like a typical desktop mega-menu, with a short delay on
+  // close so moving the cursor from the "All" button down into the panel
+  // (across the small gap between them) doesn't slam it shut.
+  const openCategoryMenu = () => {
+    if (closeMenuTimeout.current) clearTimeout(closeMenuTimeout.current);
+    setIsCategoryMenuOpen(true);
+  };
+  const scheduleCloseCategoryMenu = () => {
+    closeMenuTimeout.current = setTimeout(() => {
+      setIsCategoryMenuOpen(false);
+      setExpandedCategory(null);
+    }, 200);
+  };
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const pathname = usePathname();
@@ -156,7 +171,11 @@ export const Navbar = () => {
             too (overflow-x non-visible forces overflow-y to clip as well). */}
         <div className="hidden lg:block border-t border-white/5">
           <div className="w-full px-2 sm:px-6 flex items-center">
-            <div className="relative flex-shrink-0">
+            <div
+              className="relative flex-shrink-0"
+              onMouseEnter={openCategoryMenu}
+              onMouseLeave={scheduleCloseCategoryMenu}
+            >
               <button
                 onClick={() => setIsCategoryMenuOpen((v) => !v)}
                 className={`flex items-center gap-2 text-[16px] font-medium transition-colors px-3 py-3.5 ${isCategoryMenuOpen ? "text-[#c6ff00]" : "text-gray-300 hover:text-white"}`}

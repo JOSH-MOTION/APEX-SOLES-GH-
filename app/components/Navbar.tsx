@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, X, Menu, Search, User as UserIcon, LogOut, ClipboardList, LayoutGrid, ChevronDown, ChevronRight } from "lucide-react";
+import { Shoe } from "@/types";
 import { signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebase";
 import { Logo } from "./Logo";
@@ -13,6 +14,26 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useShoes } from "@/hooks/useShoes";
 import { useCart } from "../CartProvider";
+
+// Placeholder mega-menu groupings for Men/Women/Kids, requested explicitly as
+// dummy content for now (unlike the "All" dropdown, which only ever shows
+// real categories/subcategories a product actually uses). These link to the
+// real gender-filtered archive view rather than a fake subcategory param, so
+// clicking one still lands on real products instead of an empty page.
+const GENDER_MEGA_MENU: Record<string, { archiveCategory: string; groups: string[] }> = {
+  Men: {
+    archiveCategory: "Men",
+    groups: ["Men's Sneakers", "Men's Apparel", "Men's Accessories", "Men's Basketball", "Men's Lifestyle"],
+  },
+  Women: {
+    archiveCategory: "Women",
+    groups: ["Women's Sneakers", "Women's Apparel", "Women's Accessories", "Women's Slides", "Women's Lifestyle"],
+  },
+  Kids: {
+    archiveCategory: "Kids",
+    groups: ["Kids' Sneakers", "Kids' Apparel", "Grade School", "Toddler & Infant"],
+  },
+};
 
 // Self-contained: every page just renders <Navbar /> with no props. It owns
 // auth state, the auth modal, and the shared cart (via CartProvider) so pages
@@ -39,6 +60,16 @@ export const Navbar = () => {
       setIsCategoryMenuOpen(false);
       setExpandedCategory(null);
     }, 200);
+  };
+
+  const [hoveredGenderMenu, setHoveredGenderMenu] = useState<string | null>(null);
+  const genderMenuTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openGenderMenu = (name: string) => {
+    if (genderMenuTimeout.current) clearTimeout(genderMenuTimeout.current);
+    setHoveredGenderMenu(name);
+  };
+  const scheduleCloseGenderMenu = () => {
+    genderMenuTimeout.current = setTimeout(() => setHoveredGenderMenu(null), 200);
   };
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,11 +101,26 @@ export const Navbar = () => {
     { name: 'Home', href: '/' },
     { name: 'Men', href: '/men' },
     { name: 'Women', href: '/women' },
+    { name: 'Kids', href: '/archive?category=Kids' },
     { name: 'Archive', href: '/archive' },
     { name: 'Culture', href: '/culture' },
     { name: 'Drops', href: '/drops' },
     { name: 'Contact', href: '/contact' },
   ];
+
+  // Real product thumbnails shown alongside the dummy subcategory groups —
+  // mirrors the actual filtering the /men and /women pages use ("Men" =
+  // everything not tagged Women, since most of the catalog isn't gender-
+  // specific). Kids will come back empty until real Kids inventory exists,
+  // and the panel hides that section gracefully rather than showing nothing.
+  const genderPreviewShoes = useMemo<Record<string, Shoe[]>>(
+    () => ({
+      Men: shoes.filter((s) => s.category !== "Women" && s.category !== "Kids").slice(0, 3),
+      Women: shoes.filter((s) => s.category === "Women").slice(0, 3),
+      Kids: shoes.filter((s) => s.category === "Kids").slice(0, 3),
+    }),
+    [shoes]
+  );
 
   const handleMobileNavigate = () => setIsMobileMenuOpen(false);
 
@@ -244,16 +290,87 @@ export const Navbar = () => {
                 )}
               </AnimatePresence>
             </div>
-            <div className="flex items-center overflow-x-auto">
-              {categoryLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`text-[16px] font-medium transition-colors flex-shrink-0 px-3 py-3.5 ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-300 hover:text-white'}`}
-                >
-                  {link.name}
-                </Link>
-              ))}
+            {/* flex-wrap, not overflow-x-auto — this row also needs to host
+                per-link mega-menu popouts, and overflow-x non-visible clips
+                overflow-y too (same bug fixed on the "All" dropdown above).
+                At lg+ widths this short link list fits on one line anyway. */}
+            <div className="flex items-center flex-wrap">
+              {categoryLinks.map((link) => {
+                const megaMenu = GENDER_MEGA_MENU[link.name];
+                const isMegaOpen = hoveredGenderMenu === link.name;
+                const previewShoes = genderPreviewShoes[link.name] || [];
+
+                if (!megaMenu) {
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`text-[16px] font-medium transition-colors flex-shrink-0 px-3 py-3.5 ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-300 hover:text-white'}`}
+                    >
+                      {link.name}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <div
+                    key={link.href}
+                    className="relative flex-shrink-0"
+                    onMouseEnter={() => openGenderMenu(link.name)}
+                    onMouseLeave={scheduleCloseGenderMenu}
+                  >
+                    <Link
+                      href={link.href}
+                      className={`flex items-center gap-1.5 text-[16px] font-medium transition-colors px-3 py-3.5 ${pathname === link.href || isMegaOpen ? 'text-[#c6ff00]' : 'text-gray-300 hover:text-white'}`}
+                    >
+                      {link.name}
+                      <ChevronDown size={13} className={`transition-transform ${isMegaOpen ? "rotate-180" : ""}`} />
+                    </Link>
+
+                    <AnimatePresence>
+                      {isMegaOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          className="absolute top-full left-0 mt-1 flex bg-[#141414] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                        >
+                          <div className="w-52 py-2 border-r border-white/5">
+                            <p className="px-4 pb-2 text-[10px] font-black uppercase tracking-widest text-gray-600">Shop {link.name}</p>
+                            {megaMenu.groups.map((group) => (
+                              <Link
+                                key={group}
+                                href={`/archive?category=${encodeURIComponent(megaMenu.archiveCategory)}`}
+                                onClick={() => setHoveredGenderMenu(null)}
+                                className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                              >
+                                {group}
+                              </Link>
+                            ))}
+                          </div>
+                          {previewShoes.length > 0 && (
+                            <div className="w-72 p-3 grid grid-cols-3 gap-2">
+                              {previewShoes.map((shoe) => (
+                                <Link
+                                  key={shoe.id}
+                                  href={`/product/${shoe.id}`}
+                                  onClick={() => setHoveredGenderMenu(null)}
+                                  className="group block"
+                                >
+                                  <div className="aspect-square rounded-lg overflow-hidden bg-white/5 border border-white/10 mb-1.5">
+                                    <img src={shoe.image_url} alt={shoe.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                                  </div>
+                                  <p className="text-[10px] text-gray-400 group-hover:text-white transition-colors truncate">{shoe.name}</p>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

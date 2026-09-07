@@ -397,52 +397,78 @@ export const Navbar = () => {
               exit={{ opacity: 0, height: 0 }}
               className="lg:hidden bg-[#0a0a0a] border-t border-white/10 overflow-hidden"
             >
-              <div className="flex flex-col p-6 gap-6">
-                {categoryLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={handleMobileNavigate}
-                    className={`text-sm font-bold tracking-widest text-left uppercase ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-400'}`}
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-                {shoeCategories.length > 0 && (
-                  <div className="pt-2 border-t border-white/10 flex flex-col gap-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Shop by Category</p>
-                    {shoeCategories.map((cat) => (
-                      <div key={cat} className="flex flex-col gap-3">
+              <div className="flex flex-col p-6 gap-1">
+                {categoryLinks.map((link) => {
+                  const megaMenu = GENDER_MEGA_MENU[link.name];
+                  if (!megaMenu) {
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={handleMobileNavigate}
+                        className={`py-3 text-sm font-bold tracking-widest text-left uppercase ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-400'}`}
+                      >
+                        {link.name}
+                      </Link>
+                    );
+                  }
+                  // Men/Women/Kids expand in place instead of also being
+                  // re-listed under a separate "Shop by Category" block —
+                  // Archive already covers full category/subcategory
+                  // filtering, so this menu doesn't need to duplicate it.
+                  const isExpanded = hoveredGenderMenu === link.name;
+                  return (
+                    <div key={link.href}>
+                      <div className="flex items-center justify-between">
                         <Link
-                          href={`/archive?category=${encodeURIComponent(cat)}`}
+                          href={link.href}
                           onClick={handleMobileNavigate}
-                          className="text-sm font-bold tracking-widest text-left uppercase text-gray-400"
+                          className={`py-3 text-sm font-bold tracking-widest text-left uppercase ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-400'}`}
                         >
-                          {cat}
+                          {link.name}
                         </Link>
-                        {(subcategoriesByCategory[cat] || []).map((sub) => (
-                          <Link
-                            key={sub}
-                            href={`/archive?category=${encodeURIComponent(cat)}&subcategory=${encodeURIComponent(sub)}`}
-                            onClick={handleMobileNavigate}
-                            className="pl-4 text-xs font-bold tracking-widest text-left uppercase text-gray-600"
-                          >
-                            {sub}
-                          </Link>
-                        ))}
+                        <button
+                          onClick={() => setHoveredGenderMenu(isExpanded ? null : link.name)}
+                          className="p-3 text-gray-500"
+                        >
+                          <ChevronDown size={16} className={`transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                      {isExpanded && (
+                        <div className="pb-2 flex flex-col gap-3">
+                          {megaMenu.groups.map((group) => (
+                            <Link
+                              key={group}
+                              href={`/archive?category=${encodeURIComponent(megaMenu.archiveCategory)}`}
+                              onClick={handleMobileNavigate}
+                              className="pl-4 text-xs font-bold tracking-widest text-left uppercase text-gray-600"
+                            >
+                              {group}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {shoeCategories.length > 0 && (
+                  <Link
+                    href="/archive"
+                    onClick={handleMobileNavigate}
+                    className="py-3 mt-2 pt-4 border-t border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-600"
+                  >
+                    Browse All Categories &amp; Filters →
+                  </Link>
                 )}
-                <Link href="/archive?intent=sell" onClick={handleMobileNavigate} className="text-sm font-bold tracking-widest text-left uppercase text-gray-400">Sell</Link>
-                <Link href="/account" onClick={handleMobileNavigate} className="text-sm font-bold tracking-widest text-left uppercase text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> My Account</Link>
+                <Link href="/archive?intent=sell" onClick={handleMobileNavigate} className="py-3 text-sm font-bold tracking-widest text-left uppercase text-gray-400">Sell</Link>
+                <Link href="/account" onClick={handleMobileNavigate} className="py-3 text-sm font-bold tracking-widest text-left uppercase text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> My Account</Link>
                 {user && (
                   <button
                     onClick={() => {
                       signOut(getClientAuth());
                       setIsMobileMenuOpen(false);
                     }}
-                    className="text-sm font-bold tracking-widest text-left uppercase text-red-500"
+                    className="py-3 text-sm font-bold tracking-widest text-left uppercase text-red-500"
                   >
                     Logout
                   </button>

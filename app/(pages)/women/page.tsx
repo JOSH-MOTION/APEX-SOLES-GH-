@@ -46,7 +46,7 @@ export default function WomenPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-[#c6ff00] selection:text-black">
       <Navbar />
       <main>
-        <section className="px-6 py-20 max-w-[1400px] mx-auto w-full">
+        <section className="w-full px-4 sm:px-8 py-20">
           <div className="mb-12">
             <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2">Women's Collection</h2>
             <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">Curated selection for women.</p>
@@ -56,7 +56,7 @@ export default function WomenPage() {
               <div className="w-8 h-8 border-4 border-white/20 border-t-[#c6ff00] rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
               {shoes.map((shoe) => (
                 <ProductCard
                   key={shoe.id}

@@ -26,16 +26,21 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
       className="group block bg-[#141414] rounded-lg border border-white/10 overflow-hidden hover:border-white/20 hover:shadow-[0_10px_20px_rgba(0,0,0,0.4)] transition-all duration-500"
     >
       <div className="aspect-square bg-[#1c1c1c] relative overflow-hidden">
+        {/* Full-width status banner — always the first thing you see on a card,
+            so a shopper never has to guess whether it's really in stock. */}
+        <div className={`absolute top-0 left-0 right-0 z-10 flex items-center justify-center gap-1.5 py-1.5 ${statusConfig.bannerClass}`}>
+          <statusConfig.Icon size={11} strokeWidth={3} />
+          <span className="text-[10px] font-black uppercase tracking-wider">{statusConfig.label}</span>
+        </div>
+
         <img
           src={shoe.image_url}
           alt={shoe.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-          <span className={`flex items-center gap-1 text-[7px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full border backdrop-blur-sm ${statusConfig.badgeClass}`}>
-            <statusConfig.Icon size={8} strokeWidth={3} /> {statusConfig.label}
-          </span>
+
+        <div className="absolute bottom-2 left-2 flex flex-col gap-1 items-start">
           {shoe.colors && shoe.colors.length > 1 && (
             <span className="text-[7px] font-black uppercase tracking-wide bg-black/70 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full border border-white/10">
               +{shoe.colors.length - 1}
@@ -47,6 +52,7 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
             </span>
           )}
         </div>
+
         {onToggleFollow && (
           <button
             onClick={(e) => {
@@ -54,7 +60,7 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
               e.stopPropagation();
               onToggleFollow(shoe);
             }}
-            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:text-[#c6ff00] transition-colors z-10"
+            className="absolute top-9 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-white hover:text-[#c6ff00] transition-colors z-10"
           >
             <Heart size={12} fill={isFollowed ? "#c6ff00" : "none"} className={isFollowed ? "text-[#c6ff00]" : ""} />
           </button>

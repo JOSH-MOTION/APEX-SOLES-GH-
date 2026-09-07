@@ -3,6 +3,7 @@
 import { Shoe } from "@/types";
 
 export interface ProductFilters {
+  category: string;
   brand: string;
   size: string;
   color: string;
@@ -12,6 +13,7 @@ export interface ProductFilters {
 }
 
 export const defaultFilters: ProductFilters = {
+  category: "",
   brand: "",
   size: "",
   color: "",
@@ -22,6 +24,7 @@ export const defaultFilters: ProductFilters = {
 
 export function applyFilters(shoes: Shoe[], priceMap: Record<string, number>, filters: ProductFilters): Shoe[] {
   let result = shoes.filter((shoe) => {
+    if (filters.category && shoe.category !== filters.category) return false;
     if (filters.brand && shoe.brand !== filters.brand) return false;
     if (filters.size && !(shoe.sizes || []).includes(filters.size)) return false;
     if (filters.color && shoe.color !== filters.color && !(shoe.colors || []).includes(filters.color)) return false;
@@ -52,6 +55,7 @@ interface FilterSidebarProps {
 }
 
 export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) => {
+  const categories = Array.from(new Set(shoes.map((s) => s.category))).sort();
   const brands = Array.from(new Set(shoes.map((s) => s.brand))).sort();
   const sizes = Array.from(new Set(shoes.flatMap((s) => s.sizes || []))).sort();
   const colors = Array.from(new Set(shoes.flatMap((s) => [s.color, ...(s.colors || [])]).filter(Boolean))).sort();
@@ -60,6 +64,20 @@ export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) 
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0 space-y-8">
+      <div>
+        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Category</label>
+        <select
+          value={filters.category}
+          onChange={(e) => set({ category: e.target.value })}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
+        >
+          <option value="">All Categories</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+
       <div>
         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Sort By</label>
         <select
@@ -138,7 +156,7 @@ export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) 
         </div>
       </div>
 
-      {(filters.brand || filters.size || filters.color || filters.minPrice || filters.maxPrice) && (
+      {(filters.category || filters.brand || filters.size || filters.color || filters.minPrice || filters.maxPrice) && (
         <button
           onClick={() => onChange(defaultFilters)}
           className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#c6ff00] transition-colors"

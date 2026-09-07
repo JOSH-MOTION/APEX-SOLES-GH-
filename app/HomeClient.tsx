@@ -80,22 +80,6 @@ export default function HomeClient() {
     return shoes.slice(0, 8);
   }, [trendingIds, shoes]);
 
-  // Extra curated rows, mirroring how stockx.com stacks several distinct
-  // horizontal-scroll shelves on its homepage rather than one flat grid —
-  // built from real category counts, not fabricated content.
-  const categoryRows = useMemo(() => {
-    const byCategory = new Map<string, Shoe[]>();
-    shoes.forEach((s) => {
-      if (!byCategory.has(s.category)) byCategory.set(s.category, []);
-      byCategory.get(s.category)!.push(s);
-    });
-    return Array.from(byCategory.entries())
-      .filter(([, items]) => items.length >= 3)
-      .sort((a, b) => b[1].length - a[1].length)
-      .slice(0, 3)
-      .map(([category, items]) => ({ category, items: items.slice(0, 8) }));
-  }, [shoes]);
-
   const categories = useMemo(() => ["All", ...Array.from(new Set(shoes.map((s) => s.category))).sort()], [shoes]);
 
   const filteredShoes = useMemo(() => {
@@ -119,8 +103,41 @@ export default function HomeClient() {
         <Hero />
         <HorizontalGallery shoes={trendingShoes} />
 
+        <section id="collection" className="w-full px-4 sm:px-8 py-20">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+            <div>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2 text-white">The Collection</h2>
+              <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">Buy at the lowest ask, or bid your price.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-md border transition-all ${activeCategory === cat ? "bg-[#c6ff00] text-black border-[#c6ff00]" : "border-white/10 text-white hover:border-white/30"}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+            {filteredShoes.map((shoe) => (
+              <ProductCard
+                key={shoe.id}
+                shoe={shoe}
+                lowestAsk={askMap[String(shoe.id)]}
+                soldCount={soldMap[String(shoe.id)]}
+                isFollowed={followed.has(String(shoe.id))}
+                onToggleFollow={handleToggleFollow}
+              />
+            ))}
+          </div>
+        </section>
+
         {popularBrands.length > 0 && (
-          <section className="px-6 pt-16 max-w-[1400px] mx-auto w-full">
+          <section className="w-full px-4 sm:px-8 py-16 border-t border-white/5">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-black italic uppercase tracking-tighter">Popular Brands</h2>
               <Link href="/archive" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#c6ff00] transition-colors">See All</Link>
@@ -145,7 +162,7 @@ export default function HomeClient() {
         )}
 
         {trendingShoes.length > 0 && (
-          <section className="px-6 py-16 max-w-[1400px] mx-auto w-full">
+          <section className="w-full px-4 sm:px-8 py-16 border-t border-white/5">
             <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-8">Trending Now</h2>
             <div className="flex gap-6 overflow-x-auto pb-4">
               {trendingShoes.map((shoe) => (
@@ -162,66 +179,6 @@ export default function HomeClient() {
             </div>
           </section>
         )}
-
-        {categoryRows.map(({ category, items }) => (
-          <section key={category} className="px-6 py-16 max-w-[1400px] mx-auto w-full border-t border-white/5">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-black italic uppercase tracking-tighter">{category}</h2>
-              <button
-                onClick={() => { setActiveCategory(category); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}
-                className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#c6ff00] transition-colors"
-              >
-                See All
-              </button>
-            </div>
-            <div className="flex gap-6 overflow-x-auto pb-4">
-              {items.map((shoe) => (
-                <div key={shoe.id} className="w-44 flex-shrink-0">
-                  <ProductCard
-                    shoe={shoe}
-                    lowestAsk={askMap[String(shoe.id)]}
-                    soldCount={soldMap[String(shoe.id)]}
-                    isFollowed={followed.has(String(shoe.id))}
-                    onToggleFollow={handleToggleFollow}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
-
-        <section id="collection" className="px-6 py-20 max-w-[1400px] mx-auto w-full">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
-            <div>
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2 text-white">The Collection</h2>
-              <p className="text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">Buy at the lowest ask, or bid your price.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-md border transition-all ${activeCategory === cat ? "bg-[#c6ff00] text-black border-[#c6ff00]" : "border-white/10 text-white hover:border-white/30"}`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredShoes.map((shoe) => (
-              <ProductCard
-                key={shoe.id}
-                shoe={shoe}
-                lowestAsk={askMap[String(shoe.id)]}
-                soldCount={soldMap[String(shoe.id)]}
-                isFollowed={followed.has(String(shoe.id))}
-                onToggleFollow={handleToggleFollow}
-              />
-            ))}
-          </div>
-        </section>
 
         <section className="bg-[#141414] py-32 px-6 border-y border-white/10">
           <div className="max-w-xl mx-auto text-center">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, Menu, Search, User as UserIcon, LogOut, ClipboardList, LayoutGrid } from "lucide-react";
+import { ShoppingBag, X, Menu, Search, User as UserIcon, LogOut, ClipboardList, LayoutGrid, ChevronDown } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebase";
 import { Logo } from "./Logo";
@@ -11,6 +11,7 @@ import { UserAuthModal } from "./UserAuthModal";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useShoes } from "@/hooks/useShoes";
 import { useCart } from "../CartProvider";
 
 // Self-contained: every page just renders <Navbar /> with no props. It owns
@@ -22,12 +23,19 @@ import { useCart } from "../CartProvider";
 // category strip — not a single flat row of links.
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthUser();
+  const { shoes } = useShoes();
   const { items, isOpen, openCart, closeCart, removeTrade, clearCart } = useCart();
+
+  // Real shoe categories (Lifestyle, Performance, ...) — not the page routes
+  // below. Browsing by category lives here in the nav, not as its own
+  // homepage section.
+  const shoeCategories = useMemo(() => Array.from(new Set(shoes.map((s) => s.category))).sort(), [shoes]);
 
   const categoryLinks = [
     { name: 'Home', href: '/' },
@@ -129,11 +137,48 @@ export const Navbar = () => {
         </div>
 
         {/* Row 2: category strip — also full-width */}
-        <div className="hidden lg:block border-t border-white/5">
+        <div className="hidden lg:block border-t border-white/5 relative">
           <div className="w-full px-2 sm:px-6 flex items-center overflow-x-auto">
-            <button className="flex items-center gap-2 text-[16px] font-medium text-gray-300 hover:text-white transition-colors flex-shrink-0 px-3 py-3.5">
-              <LayoutGrid size={17} /> All
-            </button>
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setIsCategoryMenuOpen((v) => !v)}
+                className={`flex items-center gap-2 text-[16px] font-medium transition-colors px-3 py-3.5 ${isCategoryMenuOpen ? "text-[#c6ff00]" : "text-gray-300 hover:text-white"}`}
+              >
+                <LayoutGrid size={17} /> All <ChevronDown size={14} className={`transition-transform ${isCategoryMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <AnimatePresence>
+                {isCategoryMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsCategoryMenuOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="absolute top-full left-0 mt-1 w-56 bg-[#141414] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                    >
+                      <Link
+                        href="/archive"
+                        onClick={() => setIsCategoryMenuOpen(false)}
+                        className="block px-4 py-3 text-sm font-bold text-white hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        All Products
+                      </Link>
+                      {shoeCategories.map((cat) => (
+                        <Link
+                          key={cat}
+                          href={`/archive?category=${encodeURIComponent(cat)}`}
+                          onClick={() => setIsCategoryMenuOpen(false)}
+                          className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                        >
+                          {cat}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
             {categoryLinks.map((link) => (
               <Link
                 key={link.href}
@@ -179,6 +224,21 @@ export const Navbar = () => {
                     {link.name}
                   </Link>
                 ))}
+                {shoeCategories.length > 0 && (
+                  <div className="pt-2 border-t border-white/10 flex flex-col gap-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Shop by Category</p>
+                    {shoeCategories.map((cat) => (
+                      <Link
+                        key={cat}
+                        href={`/archive?category=${encodeURIComponent(cat)}`}
+                        onClick={handleMobileNavigate}
+                        className="text-sm font-bold tracking-widest text-left uppercase text-gray-400"
+                      >
+                        {cat}
+                      </Link>
+                    ))}
+                  </div>
+                )}
                 <Link href="/archive?intent=sell" onClick={handleMobileNavigate} className="text-sm font-bold tracking-widest text-left uppercase text-gray-400">Sell</Link>
                 <Link href="/account" onClick={handleMobileNavigate} className="text-sm font-bold tracking-widest text-left uppercase text-gray-400 flex items-center gap-2"><ClipboardList size={16} /> My Account</Link>
                 {user && (

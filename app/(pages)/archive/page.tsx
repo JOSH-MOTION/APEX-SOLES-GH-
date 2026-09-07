@@ -20,7 +20,11 @@ function ArchiveContent() {
 
   const { shoes, loading } = useShoes();
   const { user } = useAuthUser();
-  const [filters, setFilters] = useState<ProductFilters>({ ...defaultFilters, brand: searchParams.get("brand") || "" });
+  const [filters, setFilters] = useState<ProductFilters>({
+    ...defaultFilters,
+    brand: searchParams.get("brand") || "",
+    category: searchParams.get("category") || "",
+  });
   const [askMap, setAskMap] = useState<Record<string, number>>({});
   const [soldMap, setSoldMap] = useState<Record<string, number>>({});
   const [followed, setFollowed] = useState<Set<string>>(new Set());
@@ -58,7 +62,7 @@ function ArchiveContent() {
 
   return (
     <main>
-      <section className="py-20 px-6 max-w-[1400px] mx-auto w-full">
+      <section className="w-full py-20 px-4 sm:px-8">
         <div className="mb-12">
           <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-2 text-white">
             {query ? `Results for "${query}"` : "Browse the Marketplace"}
@@ -87,7 +91,7 @@ function ArchiveContent() {
                 <p className="text-gray-500 text-sm mt-2 uppercase tracking-widest">Try adjusting your search or filters</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                 {filteredShoes.map((shoe) => (
                   <ProductCard
                     key={shoe.id}

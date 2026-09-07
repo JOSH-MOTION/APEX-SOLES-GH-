@@ -136,9 +136,12 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Row 2: category strip — also full-width */}
-        <div className="hidden lg:block border-t border-white/5 relative">
-          <div className="w-full px-2 sm:px-6 flex items-center overflow-x-auto">
+        {/* Row 2: category strip — also full-width. The "All" dropdown lives
+            outside the horizontally-scrolling link strip on purpose: nesting
+            it inside an overflow-x-auto container clips the panel vertically
+            too (overflow-x non-visible forces overflow-y to clip as well). */}
+        <div className="hidden lg:block border-t border-white/5">
+          <div className="w-full px-2 sm:px-6 flex items-center">
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setIsCategoryMenuOpen((v) => !v)}
@@ -179,15 +182,17 @@ export const Navbar = () => {
                 )}
               </AnimatePresence>
             </div>
-            {categoryLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-[16px] font-medium transition-colors flex-shrink-0 px-3 py-3.5 ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-300 hover:text-white'}`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            <div className="flex items-center overflow-x-auto">
+              {categoryLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[16px] font-medium transition-colors flex-shrink-0 px-3 py-3.5 ${pathname === link.href ? 'text-[#c6ff00]' : 'text-gray-300 hover:text-white'}`}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -17,6 +17,19 @@ import { placeAsk, cancelAsk, getAllActiveAsks, getAllActiveOffers, getAllSales,
 import { STOCK_STATUS_CONFIG, resolveStockStatus } from "@/lib/stockStatus";
 import Image from "next/image";
 
+// Starter subcategory suggestions per category — admin can apply these to
+// real products in one click, or ignore them and add their own. They never
+// appear in the public nav on their own; the nav only reflects categories a
+// real product actually uses.
+const SUBCATEGORY_SUGGESTIONS: Record<string, string[]> = {
+  Men: ["Sneakers", "Basketball", "Running", "Lifestyle", "Slides"],
+  Women: ["Sneakers", "Lifestyle", "Slides", "Sandals"],
+  Unisex: ["Sneakers", "Lifestyle", "Slides"],
+  Performance: ["Running", "Basketball", "Training", "Football"],
+  Lifestyle: ["Retro", "Collab", "Skate"],
+  Limited: ["Collab", "Retro", "Sample", "Exclusive"],
+};
+
 const Logo = ({ className = "", variant = 'light', height = 40 }: {
   className?: string,
   variant?: 'dark' | 'light',
@@ -231,7 +244,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const [listStockPrice, setListStockPrice] = useState("");
 
   const [formData, setFormData] = useState({
-    name: "", brand: "Nike", price: "", category: "Lifestyle",
+    name: "", brand: "Nike", price: "", category: "Lifestyle", subcategory: "",
     description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "",
     stockStatus: "in_stock" as StockStatus, preOrderEta: "",
     sizes: [] as string[], colors: [] as string[], additional_images: [] as string[]
@@ -245,6 +258,25 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   });
   const [customCategory, setCustomCategory] = useState("");
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
+  // Subcategories are scoped per category (e.g. "Performance" -> Running,
+  // Basketball; "Limited" -> Collab, Retro) — mirrors how stockx.com groups
+  // sub-types differently under each top-level category rather than sharing
+  // one flat list.
+  const [subcategoriesByCategory, setSubcategoriesByCategory] = useState<Record<string, string[]>>(() => {
+    const map: Record<string, string[]> = {};
+    Object.entries(SUBCATEGORY_SUGGESTIONS).forEach(([cat, subs]) => {
+      map[cat] = [...subs];
+    });
+    shoes.forEach(s => {
+      if (s.subcategory) {
+        if (!map[s.category]) map[s.category] = [];
+        if (!map[s.category].includes(s.subcategory)) map[s.category].push(s.subcategory);
+      }
+    });
+    return map;
+  });
+  const [customSubcategory, setCustomSubcategory] = useState("");
+  const [showCustomSubcategoryInput, setShowCustomSubcategoryInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -289,6 +321,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
       setFormData({
         name: editingShoe.name, brand: editingShoe.brand,
         price: editingShoe.price.toString(), category: editingShoe.category,
+        subcategory: editingShoe.subcategory || "",
         description: editingShoe.description, image_url: editingShoe.image_url,
         color: editingShoe.color,
         styleCode: editingShoe.styleCode || "", releaseDate: editingShoe.releaseDate || "",
@@ -353,11 +386,13 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const handleCategoryChange = (category: string) => {
     if (category === "Other") {
       setShowCustomCategoryInput(true);
-      setFormData(prev => ({ ...prev, category: "" }));
+      setFormData(prev => ({ ...prev, category: "", subcategory: "" }));
     } else {
       setShowCustomCategoryInput(false);
       setCustomCategory("");
-      setFormData(prev => ({ ...prev, category }));
+      // Subcategory is scoped to the previous category — clear it so a stale
+      // value from a different category can't linger.
+      setFormData(prev => ({ ...prev, category, subcategory: "" }));
     }
   };
 
@@ -365,13 +400,36 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
     if (customCategory.trim() && !categories.includes(customCategory.trim())) {
       const newCategory = customCategory.trim();
       setCategories(prev => [...prev, newCategory]);
-      setFormData(prev => ({ ...prev, category: newCategory }));
+      setFormData(prev => ({ ...prev, category: newCategory, subcategory: "" }));
       setCustomCategory("");
       setShowCustomCategoryInput(false);
     }
   };
 
-  const resetForm = () => setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "", stockStatus: "in_stock", preOrderEta: "", sizes: [], colors: [], additional_images: [] });
+  const handleSubcategoryChange = (subcategory: string) => {
+    if (subcategory === "Other") {
+      setShowCustomSubcategoryInput(true);
+      setFormData(prev => ({ ...prev, subcategory: "" }));
+    } else {
+      setShowCustomSubcategoryInput(false);
+      setCustomSubcategory("");
+      setFormData(prev => ({ ...prev, subcategory }));
+    }
+  };
+
+  const handleCustomSubcategoryAdd = () => {
+    const value = customSubcategory.trim();
+    if (!value) return;
+    const existing = subcategoriesByCategory[formData.category] || [];
+    if (!existing.includes(value)) {
+      setSubcategoriesByCategory(prev => ({ ...prev, [formData.category]: [...existing, value] }));
+    }
+    setFormData(prev => ({ ...prev, subcategory: value }));
+    setCustomSubcategory("");
+    setShowCustomSubcategoryInput(false);
+  };
+
+  const resetForm = () => setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", subcategory: "", description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "", stockStatus: "in_stock", preOrderEta: "", sizes: [], colors: [], additional_images: [] });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -381,7 +439,8 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
       const firestore = getClientDb();
       const payload = {
         name: formData.name, brand: formData.brand, price: parseFloat(formData.price),
-        category: formData.category, description: formData.description, image_url: formData.image_url,
+        category: formData.category, subcategory: formData.subcategory || null,
+        description: formData.description, image_url: formData.image_url,
         color: formData.color, sizes: formData.sizes, colors: formData.colors,
         additional_images: formData.additional_images,
         styleCode: formData.styleCode || null,
@@ -631,6 +690,22 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                         <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="Enter new category name..." className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 ring-[#c6ff00]/30 transition-all" />
                         <button type="button" onClick={handleCustomCategoryAdd} className="bg-[#c6ff00] text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#d4ff33] transition-all">Add</button>
                         <button type="button" onClick={() => { setShowCustomCategoryInput(false); setCustomCategory(""); setFormData(prev => ({ ...prev, category: categories[0] || "Lifestyle" })); }} className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">Cancel</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <label className={labelClass}>Subcategory (optional)</label>
+                    <select value={formData.subcategory} onChange={e => handleSubcategoryChange(e.target.value)} className={inputClass + " appearance-none"}>
+                      <option value="" className="bg-[#141414]">None</option>
+                      {(subcategoriesByCategory[formData.category] || []).map(sc => <option key={sc} className="bg-[#141414]">{sc}</option>)}
+                      <option value="Other" className="bg-[#141414]">+ Add New Subcategory</option>
+                    </select>
+                    <p className="text-[10px] text-gray-500">Subcategories are scoped to "{formData.category}" — each category keeps its own list, e.g. Performance might have Running/Basketball while Limited has Collab/Retro.</p>
+                    {showCustomSubcategoryInput && (
+                      <div className="flex gap-2 mt-2">
+                        <input type="text" value={customSubcategory} onChange={e => setCustomSubcategory(e.target.value)} placeholder="Enter new subcategory name..." className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 ring-[#c6ff00]/30 transition-all" />
+                        <button type="button" onClick={handleCustomSubcategoryAdd} className="bg-[#c6ff00] text-black px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#d4ff33] transition-all">Add</button>
+                        <button type="button" onClick={() => { setShowCustomSubcategoryInput(false); setCustomSubcategory(""); setFormData(prev => ({ ...prev, subcategory: "" })); }} className="bg-white/5 border border-white/10 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">Cancel</button>
                       </div>
                     )}
                   </div>

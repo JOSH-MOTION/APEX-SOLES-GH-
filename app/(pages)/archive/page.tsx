@@ -24,6 +24,7 @@ function ArchiveContent() {
     ...defaultFilters,
     brand: searchParams.get("brand") || "",
     category: searchParams.get("category") || "",
+    subcategory: searchParams.get("subcategory") || "",
   });
   const [askMap, setAskMap] = useState<Record<string, number>>({});
   const [soldMap, setSoldMap] = useState<Record<string, number>>({});

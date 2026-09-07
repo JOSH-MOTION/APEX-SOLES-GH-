@@ -11,6 +11,10 @@ export interface Shoe {
   description: string;
   image_url: string;
   color: string;
+  // Optional second classification level under category, e.g. category
+  // "Lifestyle" + subcategory "Retro". Admin-managed the same way category is
+  // (pick existing or add a new one) — not required on every product.
+  subcategory?: string;
   sizes: string[];
   colors: string[];
   additional_images?: string[];

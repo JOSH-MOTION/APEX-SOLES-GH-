@@ -4,6 +4,7 @@ import { Shoe } from "@/types";
 
 export interface ProductFilters {
   category: string;
+  subcategory: string;
   brand: string;
   size: string;
   color: string;
@@ -14,6 +15,7 @@ export interface ProductFilters {
 
 export const defaultFilters: ProductFilters = {
   category: "",
+  subcategory: "",
   brand: "",
   size: "",
   color: "",
@@ -25,6 +27,7 @@ export const defaultFilters: ProductFilters = {
 export function applyFilters(shoes: Shoe[], priceMap: Record<string, number>, filters: ProductFilters): Shoe[] {
   let result = shoes.filter((shoe) => {
     if (filters.category && shoe.category !== filters.category) return false;
+    if (filters.subcategory && shoe.subcategory !== filters.subcategory) return false;
     if (filters.brand && shoe.brand !== filters.brand) return false;
     if (filters.size && !(shoe.sizes || []).includes(filters.size)) return false;
     if (filters.color && shoe.color !== filters.color && !(shoe.colors || []).includes(filters.color)) return false;
@@ -56,6 +59,11 @@ interface FilterSidebarProps {
 
 export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) => {
   const categories = Array.from(new Set(shoes.map((s) => s.category))).sort();
+  // Scoped to the selected category, same as the admin form — a subcategory
+  // only makes sense once you've picked which category it belongs to.
+  const subcategories = filters.category
+    ? Array.from(new Set(shoes.filter((s) => s.category === filters.category && s.subcategory).map((s) => s.subcategory as string))).sort()
+    : [];
   const brands = Array.from(new Set(shoes.map((s) => s.brand))).sort();
   const sizes = Array.from(new Set(shoes.flatMap((s) => s.sizes || []))).sort();
   const colors = Array.from(new Set(shoes.flatMap((s) => [s.color, ...(s.colors || [])]).filter(Boolean))).sort();
@@ -68,7 +76,7 @@ export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) 
         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Category</label>
         <select
           value={filters.category}
-          onChange={(e) => set({ category: e.target.value })}
+          onChange={(e) => set({ category: e.target.value, subcategory: "" })}
           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none"
         >
           <option value="">All Categories</option>
@@ -77,6 +85,23 @@ export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) 
           ))}
         </select>
       </div>
+
+      {subcategories.length > 0 && (
+        <div>
+          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Subcategory</label>
+          <div className="flex flex-wrap gap-2">
+            {subcategories.map((sc) => (
+              <button
+                key={sc}
+                onClick={() => set({ subcategory: filters.subcategory === sc ? "" : sc })}
+                className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase border transition-all ${filters.subcategory === sc ? "bg-[#c6ff00] text-black border-[#c6ff00]" : "bg-white/5 text-white border-white/10 hover:border-white/30"}`}
+              >
+                {sc}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Sort By</label>
@@ -156,7 +181,7 @@ export const FilterSidebar = ({ shoes, filters, onChange }: FilterSidebarProps) 
         </div>
       </div>
 
-      {(filters.category || filters.brand || filters.size || filters.color || filters.minPrice || filters.maxPrice) && (
+      {(filters.category || filters.subcategory || filters.brand || filters.size || filters.color || filters.minPrice || filters.maxPrice) && (
         <button
           onClick={() => onChange(defaultFilters)}
           className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#c6ff00] transition-colors"

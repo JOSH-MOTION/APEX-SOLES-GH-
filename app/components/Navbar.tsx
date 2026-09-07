@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, Menu, Search, User as UserIcon, LogOut, ClipboardList, LayoutGrid, ChevronDown } from "lucide-react";
+import { ShoppingBag, X, Menu, Search, User as UserIcon, LogOut, ClipboardList, LayoutGrid, ChevronDown, ChevronRight } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebase";
 import { Logo } from "./Logo";
@@ -24,6 +24,7 @@ import { useCart } from "../CartProvider";
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const pathname = usePathname();
@@ -36,6 +37,19 @@ export const Navbar = () => {
   // below. Browsing by category lives here in the nav, not as its own
   // homepage section.
   const shoeCategories = useMemo(() => Array.from(new Set(shoes.map((s) => s.category))).sort(), [shoes]);
+
+  // Subcategories, scoped per category — a category only expands in the
+  // dropdown when it actually has some.
+  const subcategoriesByCategory = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    shoes.forEach((s) => {
+      if (!s.subcategory) return;
+      if (!map[s.category]) map[s.category] = [];
+      if (!map[s.category].includes(s.subcategory)) map[s.category].push(s.subcategory);
+    });
+    Object.values(map).forEach((list) => list.sort());
+    return map;
+  }, [shoes]);
 
   const categoryLinks = [
     { name: 'Home', href: '/' },
@@ -158,7 +172,7 @@ export const Navbar = () => {
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
-                      className="absolute top-full left-0 mt-1 w-56 bg-[#141414] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                      className="absolute top-full left-0 mt-1 w-64 max-h-[70vh] overflow-y-auto bg-[#141414] border border-white/10 rounded-xl shadow-2xl z-50"
                     >
                       <Link
                         href="/archive"
@@ -167,16 +181,45 @@ export const Navbar = () => {
                       >
                         All Products
                       </Link>
-                      {shoeCategories.map((cat) => (
-                        <Link
-                          key={cat}
-                          href={`/archive?category=${encodeURIComponent(cat)}`}
-                          onClick={() => setIsCategoryMenuOpen(false)}
-                          className="block px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
-                        >
-                          {cat}
-                        </Link>
-                      ))}
+                      {shoeCategories.map((cat) => {
+                        const subs = subcategoriesByCategory[cat] || [];
+                        const isExpanded = expandedCategory === cat;
+                        return (
+                          <div key={cat} className="border-b border-white/5 last:border-b-0">
+                            <div className="flex items-center">
+                              <Link
+                                href={`/archive?category=${encodeURIComponent(cat)}`}
+                                onClick={() => setIsCategoryMenuOpen(false)}
+                                className="flex-1 px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+                              >
+                                {cat}
+                              </Link>
+                              {subs.length > 0 && (
+                                <button
+                                  onClick={() => setExpandedCategory(isExpanded ? null : cat)}
+                                  className="px-3 py-3 text-gray-500 hover:text-white transition-colors"
+                                >
+                                  <ChevronRight size={14} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                                </button>
+                              )}
+                            </div>
+                            {isExpanded && subs.length > 0 && (
+                              <div className="bg-black/20 pb-1">
+                                {subs.map((sub) => (
+                                  <Link
+                                    key={sub}
+                                    href={`/archive?category=${encodeURIComponent(cat)}&subcategory=${encodeURIComponent(sub)}`}
+                                    onClick={() => setIsCategoryMenuOpen(false)}
+                                    className="block pl-8 pr-4 py-2.5 text-[13px] text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+                                  >
+                                    {sub}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </motion.div>
                   </>
                 )}
@@ -233,14 +276,25 @@ export const Navbar = () => {
                   <div className="pt-2 border-t border-white/10 flex flex-col gap-4">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Shop by Category</p>
                     {shoeCategories.map((cat) => (
-                      <Link
-                        key={cat}
-                        href={`/archive?category=${encodeURIComponent(cat)}`}
-                        onClick={handleMobileNavigate}
-                        className="text-sm font-bold tracking-widest text-left uppercase text-gray-400"
-                      >
-                        {cat}
-                      </Link>
+                      <div key={cat} className="flex flex-col gap-3">
+                        <Link
+                          href={`/archive?category=${encodeURIComponent(cat)}`}
+                          onClick={handleMobileNavigate}
+                          className="text-sm font-bold tracking-widest text-left uppercase text-gray-400"
+                        >
+                          {cat}
+                        </Link>
+                        {(subcategoriesByCategory[cat] || []).map((sub) => (
+                          <Link
+                            key={sub}
+                            href={`/archive?category=${encodeURIComponent(cat)}&subcategory=${encodeURIComponent(sub)}`}
+                            onClick={handleMobileNavigate}
+                            className="pl-4 text-xs font-bold tracking-widest text-left uppercase text-gray-600"
+                          >
+                            {sub}
+                          </Link>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 )}

@@ -20,6 +20,7 @@ import {
   PREORDER_DEPOSIT_PERCENT,
 } from "@/lib/market";
 import { resolveStockStatus, STOCK_STATUS_CONFIG } from "@/lib/stockStatus";
+import { getEffectivePrice } from "@/lib/pricing";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -27,6 +28,7 @@ import { UserAuthModal } from "@/components/UserAuthModal";
 import { BidModal } from "@/components/market/BidModal";
 import { AskModal } from "@/components/market/AskModal";
 import { MarketDataDrawer } from "@/components/market/MarketDataDrawer";
+import { GhanaLocationPicker } from "@/components/GhanaLocationPicker";
 
 const FALLBACK_SIZES = ["US 7", "US 8", "US 9", "US 10", "US 11", "US 12"];
 
@@ -66,6 +68,9 @@ export default function ProductPage() {
   const [buying, setBuying] = useState(false);
   const [preordering, setPreordering] = useState(false);
   const [preorderConfirmed, setPreorderConfirmed] = useState(false);
+  const [preorderRegion, setPreorderRegion] = useState("");
+  const [preorderAddress, setPreorderAddress] = useState("");
+  const [preorderPhone, setPreorderPhone] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +119,7 @@ export default function ProductPage() {
   const sizes = useMemo(() => (shoe?.sizes && shoe.sizes.length > 0 ? shoe.sizes : FALLBACK_SIZES), [shoe]);
   const status = resolveStockStatus(shoe?.stockStatus);
   const statusConfig = STOCK_STATUS_CONFIG[status];
+  const effectivePrice = useMemo(() => getEffectivePrice(shoe?.price || 0, shoe?.discountPercent), [shoe]);
 
   useEffect(() => {
     if (sizes.length > 0 && !selectedSize) setSelectedSize(sizes[0]);
@@ -205,6 +211,14 @@ export default function ProductPage() {
       alert("Please select a size first.");
       return;
     }
+    if (!preorderRegion) {
+      alert("Please select your delivery region first.");
+      return;
+    }
+    if (!preorderPhone.trim()) {
+      alert("Please provide a phone number so we can reach you about your deposit.");
+      return;
+    }
     setPreordering(true);
     try {
       const eta = shoe.preOrderEta || "7-14 days";
@@ -212,18 +226,24 @@ export default function ProductPage() {
         shoeId: id,
         shoeName: shoe.name,
         size: selectedSize,
-        price: shoe.price,
+        price: effectivePrice.final,
         eta,
         buyerId: user.uid,
         buyerName: user.displayName || user.email || "Buyer",
+        phone: preorderPhone.trim(),
+        region: preorderRegion,
+        address: preorderAddress,
       });
 
       let message = "🟡 *PRE-ORDER REQUEST — APEX SOLES*\n\n";
       message += `👟 *Sneaker:* ${shoe.name}\n`;
       message += `📏 *Size:* ${selectedSize}\n`;
-      message += `💰 *Price:* GH¢ ${shoe.price.toLocaleString()}\n`;
+      message += `💰 *Price:* GH¢ ${effectivePrice.final.toLocaleString()}${effectivePrice.hasDiscount ? ` (${effectivePrice.percent}% off GH¢ ${effectivePrice.original.toLocaleString()})` : ""}\n`;
       message += `💵 *Deposit Required (${PREORDER_DEPOSIT_PERCENT}%):* GH¢ ${depositAmount.toLocaleString()}\n`;
       message += `📦 *Estimated Arrival:* ${eta}\n`;
+      message += `📍 *Region:* ${preorderRegion}\n`;
+      if (preorderAddress) message += `🏠 *Address:* ${preorderAddress}\n`;
+      message += `📞 *Phone:* ${preorderPhone.trim()}\n`;
       message += `🧾 *Request Ref:* ${preorderId}\n\n`;
       message += "Please confirm to proceed with your deposit. Thank you for choosing Apex Soles! 🙌";
 
@@ -386,14 +406,22 @@ export default function ProductPage() {
             {status === "pre_order" && (
               <>
                 <div className="mt-8 bg-[#141414] border border-[#c6ff00]/20 rounded-3xl p-6 space-y-5">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Pre-Order Price</p>
-                    <p className="text-3xl font-black font-mono text-white">GH¢ {shoe.price.toLocaleString()}</p>
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Pre-Order Price</p>
+                      <p className="text-3xl font-black font-mono text-white">GH¢ {effectivePrice.final.toLocaleString()}</p>
+                    </div>
+                    {effectivePrice.hasDiscount && (
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="text-sm font-bold text-gray-500 line-through">GH¢ {effectivePrice.original.toLocaleString()}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-[#c6ff00] text-black px-2 py-0.5 rounded-full">{effectivePrice.percent}% OFF</span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400 leading-relaxed">
                     This pair isn't sitting in our physical stock — it's sourced specifically for you. Secure it with a{" "}
                     <span className="text-[#c6ff00] font-bold">{PREORDER_DEPOSIT_PERCENT}% deposit</span> (GH¢{" "}
-                    {Math.round((shoe.price * PREORDER_DEPOSIT_PERCENT) / 100).toLocaleString()}), balance on arrival.
+                    {Math.round((effectivePrice.final * PREORDER_DEPOSIT_PERCENT) / 100).toLocaleString()}), balance on arrival.
                     Estimated arrival: <span className="text-white font-bold">{shoe.preOrderEta || "7-14 days"}</span>.
                   </p>
 
@@ -403,13 +431,23 @@ export default function ProductPage() {
                       <p className="text-xs text-gray-500 mt-1">Confirm your deposit on WhatsApp to lock in sourcing.</p>
                     </div>
                   ) : (
-                    <button
-                      onClick={handlePreorderRequest}
-                      disabled={preordering}
-                      className="w-full bg-[#c6ff00] text-black py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[#d4ff33] transition-all disabled:opacity-50"
-                    >
-                      {preordering ? "Processing..." : "Secure Your Pre-Order"}
-                    </button>
+                    <>
+                      <GhanaLocationPicker
+                        region={preorderRegion}
+                        address={preorderAddress}
+                        phone={preorderPhone}
+                        onRegionChange={setPreorderRegion}
+                        onAddressChange={setPreorderAddress}
+                        onPhoneChange={setPreorderPhone}
+                      />
+                      <button
+                        onClick={handlePreorderRequest}
+                        disabled={preordering || !preorderRegion || !preorderPhone.trim()}
+                        className="w-full bg-[#c6ff00] text-black py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-[#d4ff33] transition-all disabled:opacity-50"
+                      >
+                        {preordering ? "Processing..." : "Secure Your Pre-Order"}
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -426,9 +464,17 @@ export default function ProductPage() {
 
             {status === "coming_soon" && (
               <div className="mt-8 bg-[#141414] border border-sky-500/20 rounded-3xl p-6 space-y-5">
-                <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Est. Price</p>
-                  <p className="text-3xl font-black font-mono text-white">GH¢ {shoe.price.toLocaleString()}</p>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Est. Price</p>
+                    <p className="text-3xl font-black font-mono text-white">GH¢ {effectivePrice.final.toLocaleString()}</p>
+                  </div>
+                  {effectivePrice.hasDiscount && (
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="text-sm font-bold text-gray-500 line-through">GH¢ {effectivePrice.original.toLocaleString()}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest bg-[#c6ff00] text-black px-2 py-0.5 rounded-full">{effectivePrice.percent}% OFF</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-gray-400 leading-relaxed">
                   Apex is planning to bring this pair in — it's not open for pre-order yet. Follow it and we'll notify you the moment it is.

@@ -490,6 +490,9 @@ export async function createPreorderRequest(input: {
   eta: string;
   buyerId: string;
   buyerName: string;
+  phone: string;
+  region: string;
+  address: string;
 }): Promise<{ preorderId: string; depositAmount: number }> {
   const db = getClientDb();
   const depositAmount = Math.round((input.price * PREORDER_DEPOSIT_PERCENT) / 100);
@@ -502,6 +505,9 @@ export async function createPreorderRequest(input: {
     eta: input.eta,
     buyerId: input.buyerId,
     buyerName: input.buyerName,
+    phone: input.phone,
+    region: input.region,
+    address: input.address,
     status: "requested",
     createdAt: nowIso(),
   };

@@ -15,6 +15,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User, signInWi
 import { Shoe, BlogPost, Ask, Offer, Sale, FulfillmentStatus, StockStatus, PreorderStatus, Preorder } from "@/types";
 import { placeAsk, cancelAsk, getAllActiveAsks, getAllActiveOffers, getAllSales, adminAcceptOffer, updateSaleFulfillment, getAllPreorders, updatePreorderStatus, PREORDER_DEPOSIT_PERCENT } from "@/lib/market";
 import { STOCK_STATUS_CONFIG, resolveStockStatus } from "@/lib/stockStatus";
+import { getEffectivePrice } from "@/lib/pricing";
 import Image from "next/image";
 
 // Starter subcategory suggestions per category — admin can apply these to
@@ -246,6 +247,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
   const [formData, setFormData] = useState({
     name: "", brand: "Nike", price: "", category: "Lifestyle", subcategory: "",
     description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "",
+    discountPercent: "",
     stockStatus: "in_stock" as StockStatus, preOrderEta: "",
     sizes: [] as string[], colors: [] as string[], additional_images: [] as string[]
   });
@@ -326,6 +328,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
         color: editingShoe.color,
         styleCode: editingShoe.styleCode || "", releaseDate: editingShoe.releaseDate || "",
         retailPrice: editingShoe.retailPrice?.toString() || "",
+        discountPercent: editingShoe.discountPercent?.toString() || "",
         stockStatus: editingShoe.stockStatus || "in_stock",
         preOrderEta: editingShoe.preOrderEta || "",
         sizes: editingShoe.sizes || [],
@@ -429,7 +432,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
     setShowCustomSubcategoryInput(false);
   };
 
-  const resetForm = () => setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", subcategory: "", description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "", stockStatus: "in_stock", preOrderEta: "", sizes: [], colors: [], additional_images: [] });
+  const resetForm = () => setFormData({ name: "", brand: "APEX SOLES", price: "", category: "Lifestyle", subcategory: "", description: "", image_url: "", color: "", styleCode: "", releaseDate: "", retailPrice: "", discountPercent: "", stockStatus: "in_stock", preOrderEta: "", sizes: [], colors: [], additional_images: [] });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -446,6 +449,7 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
         styleCode: formData.styleCode || null,
         releaseDate: formData.releaseDate || null,
         retailPrice: formData.retailPrice ? parseFloat(formData.retailPrice) : null,
+        discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : null,
         stockStatus: formData.stockStatus,
         preOrderEta: formData.stockStatus === "pre_order" ? (formData.preOrderEta || "7-14 days") : null,
       };
@@ -456,15 +460,16 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
       } else {
         const docRef = await addDoc(collection(firestore, "shoes"), { ...payload, createdAt: new Date().toISOString() });
         // Give the new product instant marketplace liquidity: list it as an
-        // active ask at the price the admin just set, for every size selected.
-        // Only for real in-stock inventory — PRE-ORDER/COMING SOON products
-        // have no physical pair behind them to list as an ask.
+        // active ask at the (discounted, if any) price the admin just set,
+        // for every size selected. Only for real in-stock inventory —
+        // PRE-ORDER/COMING SOON products have no physical pair to list.
         if (formData.stockStatus === "in_stock" && formData.sizes.length > 0 && formData.price) {
+          const { final: askPrice } = getEffectivePrice(parseFloat(formData.price), payload.discountPercent ?? undefined);
           await Promise.all(formData.sizes.map(size => placeAsk({
             shoeId: docRef.id,
             size,
             condition: "new",
-            price: parseFloat(formData.price),
+            price: askPrice,
             sellerId: user.uid,
             sellerName: "Apex Soles",
             sellerType: "admin",
@@ -725,6 +730,15 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                     <label className={labelClass}>Release Date (optional)</label>
                     <input value={formData.releaseDate} onChange={e => setFormData({ ...formData, releaseDate: e.target.value })} className={inputClass} placeholder="e.g. 05/30/2026" />
                   </div>
+                  <div className="space-y-2">
+                    <label className={labelClass}>Discount % (optional)</label>
+                    <input type="number" min={0} max={99} value={formData.discountPercent} onChange={e => setFormData({ ...formData, discountPercent: e.target.value })} className={inputClass} placeholder="e.g. 15" />
+                    {formData.discountPercent && formData.price && (
+                      <p className="text-[10px] text-gray-500">
+                        GH¢ {formData.price} → <span className="text-[#c6ff00] font-bold">GH¢ {getEffectivePrice(parseFloat(formData.price), parseFloat(formData.discountPercent)).final.toLocaleString()}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -926,27 +940,39 @@ const AdminPanel = ({ onShoeAdded, shoes, user }: { onShoeAdded: () => void, sho
                 <p className="text-center text-gray-500 text-xs font-bold uppercase tracking-widest py-16">No pre-order requests yet.</p>
               ) : (
                 <div className="divide-y divide-white/5">
-                  {preorders.map(p => (
-                    <div key={p.id} className="flex items-center gap-6 px-8 py-5">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black italic uppercase tracking-tight text-white truncate">{p.shoeName}</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Size {p.size} · {p.buyerName} · ETA {p.eta} · {new Date(p.createdAt).toLocaleDateString()}</p>
+                  {preorders.map(p => {
+                    const waNumber = (p.phone || "").replace(/\D/g, "").replace(/^0/, "233");
+                    return (
+                      <div key={p.id} className="flex items-center gap-6 px-8 py-5">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black italic uppercase tracking-tight text-white truncate">{p.shoeName}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Size {p.size} · {p.buyerName} · ETA {p.eta} · {new Date(p.createdAt).toLocaleDateString()}</p>
+                          {(p.phone || p.region) && (
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                              {p.phone && (waNumber ? (
+                                <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" className="text-[#c6ff00] hover:underline">{p.phone}</a>
+                              ) : p.phone)}
+                              {p.phone && p.region && " · "}
+                              {p.region}{p.address ? `, ${p.address}` : ""}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-mono font-black text-[#c6ff00]">GH¢ {p.price.toLocaleString()}</p>
+                          <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Deposit GH¢ {p.depositAmount.toLocaleString()}</p>
+                        </div>
+                        <select
+                          value={p.status}
+                          onChange={e => handlePreorderStatusChange(p.id, e.target.value as PreorderStatus)}
+                          className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+                        >
+                          {(["requested", "deposit_paid", "sourcing", "arrived", "completed", "cancelled"] as PreorderStatus[]).map(st => (
+                            <option key={st} value={st} className="bg-[#141414]">{st.replace("_", " ")}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-mono font-black text-[#c6ff00]">GH¢ {p.price.toLocaleString()}</p>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Deposit GH¢ {p.depositAmount.toLocaleString()}</p>
-                      </div>
-                      <select
-                        value={p.status}
-                        onChange={e => handlePreorderStatusChange(p.id, e.target.value as PreorderStatus)}
-                        className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
-                      >
-                        {(["requested", "deposit_paid", "sourcing", "arrived", "completed", "cancelled"] as PreorderStatus[]).map(st => (
-                          <option key={st} value={st} className="bg-[#141414]">{st.replace("_", " ")}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

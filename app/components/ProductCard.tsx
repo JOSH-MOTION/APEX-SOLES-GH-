@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { Shoe } from "@/types";
 import { resolveStockStatus, STOCK_STATUS_CONFIG } from "@/lib/stockStatus";
+import { getEffectivePrice } from "@/lib/pricing";
 
 interface ProductCardProps {
   shoe: Shoe;
@@ -17,7 +18,12 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
   const status = resolveStockStatus(shoe.stockStatus);
   const statusConfig = STOCK_STATUS_CONFIG[status];
   const hasAsk = status === "in_stock" && typeof lowestAsk === "number";
-  const displayPrice = hasAsk ? lowestAsk : shoe.price;
+  // A discount only ever applies to the catalog fallback price — a live ask
+  // is a real price someone (possibly a peer seller) actually listed, so it's
+  // never silently discounted here.
+  const effective = getEffectivePrice(shoe.price, shoe.discountPercent);
+  const displayPrice = hasAsk ? lowestAsk : effective.final;
+  const showDiscount = !hasAsk && effective.hasDiscount;
   const priceLabel = status === "pre_order" ? "Pre-Order Price" : status === "coming_soon" ? "Est. Price" : hasAsk ? "Lowest Ask" : "From";
 
   return (
@@ -51,6 +57,11 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
               {soldCount} Sold
             </span>
           )}
+          {showDiscount && (
+            <span className="text-[7px] font-black uppercase tracking-wide bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+              {effective.percent}% OFF
+            </span>
+          )}
         </div>
 
         {onToggleFollow && (
@@ -72,7 +83,12 @@ export const ProductCard = ({ shoe, lowestAsk, soldCount, isFollowed, onToggleFo
         <p className="text-[8px] font-black uppercase tracking-widest text-gray-500">
           {priceLabel}
         </p>
-        <span className="font-mono font-black text-sm text-white">GH¢ {displayPrice?.toLocaleString()}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono font-black text-sm text-white">GH¢ {displayPrice?.toLocaleString()}</span>
+          {showDiscount && (
+            <span className="font-mono text-[10px] text-gray-500 line-through">GH¢ {effective.original.toLocaleString()}</span>
+          )}
+        </div>
       </div>
     </Link>
   );

@@ -21,6 +21,11 @@ export interface Shoe {
   styleCode?: string;
   releaseDate?: string;
   retailPrice?: number;
+  // 0-100. Applies to the catalog/pre-order price shown on this product and
+  // the initial ask an admin lists when first adding it — it does NOT
+  // retroactively touch live asks other sellers have already listed on the
+  // marketplace, since those are real peer-set prices by then.
+  discountPercent?: number;
   stockStatus?: StockStatus;
   // Only meaningful when stockStatus === 'pre_order', e.g. "7-14 days".
   preOrderEta?: string;
@@ -154,6 +159,11 @@ export interface Preorder {
   eta: string;
   buyerId: string;
   buyerName: string;
+  // Captured at request time so the admin has real delivery/contact details
+  // on record, not just whatever surfaces in the WhatsApp chat afterward.
+  phone: string;
+  region: string;
+  address: string;
   status: PreorderStatus;
   createdAt: string;
 }
